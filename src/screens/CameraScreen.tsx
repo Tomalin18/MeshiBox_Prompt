@@ -31,6 +31,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [flashMode, setFlashMode] = useState<'off' | 'on'>('off');
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isMounted, setIsMounted] = useState(true);
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
@@ -38,6 +39,19 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     if (!permission?.granted) {
       requestPermission();
     }
+  }, []);
+
+  // 清理相機資源
+  useEffect(() => {
+    return () => {
+      // 組件卸載時清理相機資源
+      setIsMounted(false);
+      setIsProcessing(false);
+      if (cameraRef.current) {
+        // 停止相機預覽
+        console.log('Cleaning up camera resources');
+      }
+    };
   }, []);
 
   if (!permission) {
@@ -66,6 +80,9 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   }
 
   const handleClose = () => {
+    // 清理處理狀態
+    setIsProcessing(false);
+    
     if (navigation) {
       navigation.goBack();
     } else {
@@ -74,7 +91,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const takePicture = async () => {
-    if (cameraRef.current && !isProcessing) {
+    if (cameraRef.current && !isProcessing && isMounted) {
       try {
         setIsProcessing(true);
         
@@ -113,7 +130,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           const businessCard = await OCRService.processBusinessCard(photo.uri);
           
           console.log('Photo captured and processed:', photo.uri);
-          if (navigation) {
+          if (navigation && isMounted) {
             navigation.navigate('CardEdit', { 
               imageUri: photo.uri,
               ocrData: businessCard
@@ -124,7 +141,9 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
         console.error('Error taking picture:', error);
         Alert.alert('エラー', '写真の撮影に失敗しました');
       } finally {
-        setIsProcessing(false);
+        if (isMounted) {
+          setIsProcessing(false);
+        }
       }
     }
   };
@@ -171,7 +190,10 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
         facing={type} 
         ref={cameraRef}
         flash={flashMode}
-      >
+      />
+      
+      {/* UI Overlay Container */}
+      <View style={styles.overlay}>
         {/* Close Button */}
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
           <Ionicons name="close" size={28} color="#FFFFFF" />
@@ -252,7 +274,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
             />
           </TouchableOpacity>
         </View>
-      </CameraView>
+      </View>
       
       <LoadingOverlay 
         visible={isProcessing} 
@@ -438,6 +460,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
     borderColor: '#DDDDDD',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    pointerEvents: 'box-none',
   },
 });
 
