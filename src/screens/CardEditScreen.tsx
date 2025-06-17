@@ -3,19 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  TextInput,
   Image,
   Alert,
-  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../constants/Colors';
 import { BusinessCard } from '../types';
-import { validateEmail, validatePhone, validateUrl, generateCardId } from '../utils';
 import { StorageService } from '../services/StorageService';
 import LoadingOverlay from '../components/LoadingOverlay';
 
@@ -28,119 +27,40 @@ interface Props {
     params?: {
       card?: BusinessCard;
       imageUri?: string;
-      ocrData?: BusinessCard;
+      ocrData?: Partial<BusinessCard>;
     };
   };
 }
 
-interface FormField {
-  id: string;
-  value: string;
-  placeholder: string;
-  icon: string;
-}
-
 const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
-  const [language, setLanguage] = useState('日本語');
-  const [name, setName] = useState('');
-  const [position, setPosition] = useState('');
-  const [company, setCompany] = useState('');
-  const [department, setDepartment] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Contact fields
-  const [contactFields, setContactFields] = useState<FormField[]>([
-    { id: '1', value: '', placeholder: '携帯電話', icon: 'call' },
-    { id: '2', value: '', placeholder: '会社電話', icon: 'call' },
-    { id: '3', value: '', placeholder: 'FAX', icon: 'print' },
-    { id: '4', value: '', placeholder: 'メール', icon: 'mail' },
-    { id: '5', value: '', placeholder: 'サブメール', icon: 'mail' },
-    { id: '6', value: '', placeholder: 'ウェブサイト', icon: 'link' },
-  ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [cardData, setCardData] = useState<Partial<BusinessCard>>({
+    name: '',
+    company: '',
+    department: '',
+    position: '',
+    phone: '',
+    mobile: '',
+    fax: '',
+    email: '',
+    website: '',
+    address: '',
+    postalCode: '',
+    memo: '',
+  });
 
-  // Company fields
-  const [companyFields, setCompanyFields] = useState<FormField[]>([
-    { id: '1', value: '', placeholder: '郵便番号', icon: 'location' },
-    { id: '2', value: '', placeholder: '住所', icon: 'location' },
-    { id: '3', value: '', placeholder: '会社ID', icon: 'pricetag' },
-  ]);
+  const isEditing = !!route?.params?.card;
+  const imageUri = route?.params?.imageUri || route?.params?.card?.imageUri;
 
-  // Social media fields
-  const [socialFields, setSocialFields] = useState<FormField[]>([
-    { id: '1', value: '', placeholder: 'LINEアカウント', icon: 'chatbubble' },
-  ]);
-
-  const imageUri = route?.params?.imageUri;
-
-  // Auto-populate fields from OCR data or existing card
   useEffect(() => {
-    const ocrData = route?.params?.ocrData;
-    const existingCard = route?.params?.card;
-    
-    if (ocrData) {
-      // Populate from OCR data
-      setName(ocrData.name || '');
-      setCompany(ocrData.company || '');
-      setDepartment(ocrData.department || '');
-      setPosition(ocrData.position || '');
-      
-      // Update contact fields with OCR data
-      setContactFields(prev => prev.map(field => {
-        if (field.placeholder === '携帯電話') return { ...field, value: ocrData.mobile || '' };
-        if (field.placeholder === '会社電話') return { ...field, value: ocrData.phone || '' };
-        if (field.placeholder === 'FAX') return { ...field, value: ocrData.fax || '' };
-        if (field.placeholder === 'メール') return { ...field, value: ocrData.email || '' };
-        if (field.placeholder === 'サブメール') return { ...field, value: ocrData.subEmail || '' };
-        if (field.placeholder === 'ウェブサイト') return { ...field, value: ocrData.website || '' };
-        return field;
-      }));
-      
-      // Update company fields with OCR data
-      setCompanyFields(prev => prev.map(field => {
-        if (field.placeholder === '郵便番号') return { ...field, value: ocrData.postalCode || '' };
-        if (field.placeholder === '住所') return { ...field, value: ocrData.address || '' };
-        if (field.placeholder === '会社ID') return { ...field, value: ocrData.companyId || '' };
-        return field;
-      }));
-      
-      // Update social fields with OCR data
-      setSocialFields(prev => prev.map(field => {
-        if (field.placeholder === 'LINEアカウント') return { ...field, value: ocrData.lineAccount || '' };
-        return field;
-      }));
-    } else if (existingCard) {
-      // Populate from existing card data
-      setName(existingCard.name || '');
-      setCompany(existingCard.company || '');
-      setDepartment(existingCard.department || '');
-      setPosition(existingCard.position || '');
-      
-      // Update contact fields with existing card data
-      setContactFields(prev => prev.map(field => {
-        if (field.placeholder === '携帯電話') return { ...field, value: existingCard.mobile || '' };
-        if (field.placeholder === '会社電話') return { ...field, value: existingCard.phone || '' };
-        if (field.placeholder === 'FAX') return { ...field, value: existingCard.fax || '' };
-        if (field.placeholder === 'メール') return { ...field, value: existingCard.email || '' };
-        if (field.placeholder === 'サブメール') return { ...field, value: existingCard.subEmail || '' };
-        if (field.placeholder === 'ウェブサイト') return { ...field, value: existingCard.website || '' };
-        return field;
-      }));
-      
-      // Update company fields with existing card data
-      setCompanyFields(prev => prev.map(field => {
-        if (field.placeholder === '郵便番号') return { ...field, value: existingCard.postalCode || '' };
-        if (field.placeholder === '住所') return { ...field, value: existingCard.address || '' };
-        if (field.placeholder === '会社ID') return { ...field, value: existingCard.companyId || '' };
-        return field;
-      }));
-      
-      // Update social fields with existing card data
-      setSocialFields(prev => prev.map(field => {
-        if (field.placeholder === 'LINEアカウント') return { ...field, value: existingCard.lineAccount || '' };
-        return field;
-      }));
+    if (route?.params?.card) {
+      // Editing existing card
+      setCardData(route.params.card);
+    } else if (route?.params?.ocrData) {
+      // New card from OCR
+      setCardData(route.params.ocrData);
     }
-  }, [route?.params?.ocrData, route?.params?.card]);
+  }, [route?.params]);
 
   const handleBack = () => {
     if (navigation) {
@@ -149,362 +69,164 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleSave = async () => {
-    if (isSaving) return;
-    
+    if (!cardData.name?.trim()) {
+      Alert.alert('エラー', '名前を入力してください');
+      return;
+    }
+
     try {
-      setIsSaving(true);
-      
-      // 觸覺反饋
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
-      // Validate required fields
-      if (!name.trim()) {
-        Alert.alert('エラー', '名前を入力してください');
-        return;
-      }
+      setIsLoading(true);
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-      // Validate email fields
-      const emailFields = contactFields.filter(field => 
-        field.placeholder.includes('メール') && field.value.trim() !== ''
-      );
-      for (const field of emailFields) {
-        if (!validateEmail(field.value)) {
-          Alert.alert('エラー', `正しいメールアドレスを入力してください: ${field.value}`);
-          return;
-        }
-      }
-
-      // Validate phone fields
-      const phoneFields = contactFields.filter(field => 
-        (field.placeholder.includes('電話') || field.placeholder.includes('FAX')) && 
-        field.value.trim() !== ''
-      );
-      for (const field of phoneFields) {
-        if (!validatePhone(field.value)) {
-          Alert.alert('エラー', `正しい電話番号を入力してください: ${field.value}`);
-          return;
-        }
-      }
-
-      // Validate website fields
-      const websiteFields = contactFields.filter(field => 
-        field.placeholder.includes('ウェブサイト') && field.value.trim() !== ''
-      );
-      for (const field of websiteFields) {
-        if (!validateUrl(field.value)) {
-          Alert.alert('エラー', `正しいURLを入力してください: ${field.value}`);
-          return;
-        }
-      }
-
-      // Extract field values
-      const mobileField = contactFields.find(f => f.placeholder === '携帯電話');
-      const phoneField = contactFields.find(f => f.placeholder === '会社電話');
-      const faxField = contactFields.find(f => f.placeholder === 'FAX');
-      const emailField = contactFields.find(f => f.placeholder === 'メール');
-      const subEmailField = contactFields.find(f => f.placeholder === 'サブメール');
-      const websiteField = contactFields.find(f => f.placeholder === 'ウェブサイト');
-      
-      const postalCodeField = companyFields.find(f => f.placeholder === '郵便番号');
-      const addressField = companyFields.find(f => f.placeholder === '住所');
-      const companyIdField = companyFields.find(f => f.placeholder === '会社ID');
-      
-      const lineField = socialFields.find(f => f.placeholder === 'LINEアカウント');
-
-      // Create business card object
-      const existingCard = route?.params?.card;
       const businessCard: BusinessCard = {
-        id: existingCard?.id || generateCardId(),
-        name: name.trim(),
-        company: company.trim(),
-        department: department.trim(),
-        position: position.trim(),
-        phone: phoneField?.value.trim() || '',
-        mobile: mobileField?.value.trim() || '',
-        fax: faxField?.value.trim() || '',
-        email: emailField?.value.trim() || '',
-        subEmail: subEmailField?.value.trim() || '',
-        website: websiteField?.value.trim() || '',
-        address: addressField?.value.trim() || '',
-        postalCode: postalCodeField?.value.trim() || '',
-        companyId: companyIdField?.value.trim() || '',
-        lineAccount: lineField?.value.trim() || '',
-        memo: '',
-        imageUri: imageUri || existingCard?.imageUri || '',
-        createdAt: existingCard?.createdAt || new Date(),
+        id: route?.params?.card?.id || Date.now().toString(),
+        name: cardData.name.trim(),
+        company: cardData.company?.trim() || '',
+        department: cardData.department?.trim() || '',
+        position: cardData.position?.trim() || '',
+        phone: cardData.phone?.trim() || '',
+        mobile: cardData.mobile?.trim() || '',
+        fax: cardData.fax?.trim() || '',
+        email: cardData.email?.trim() || '',
+        website: cardData.website?.trim() || '',
+        address: cardData.address?.trim() || '',
+        postalCode: cardData.postalCode?.trim() || '',
+        memo: cardData.memo?.trim() || '',
+        imageUri: imageUri || '',
+        createdAt: route?.params?.card?.createdAt || new Date(),
         updatedAt: new Date(),
-        isRedCarpet: false,
-        language: 'ja',
-        tags: [],
       };
 
-      // Save to storage
       await StorageService.saveBusinessCard(businessCard);
-      
-      console.log('Business card saved successfully:', businessCard);
-      Alert.alert('成功', '名刺が保存されました', [
-        { text: 'OK', onPress: () => navigation?.goBack() }
-      ]);
+      if (isEditing) {
+        Alert.alert('成功', '名刺が更新されました');
+      } else {
+        Alert.alert('成功', '名刺が保存されました');
+      }
+
+      if (navigation) {
+        navigation.goBack();
+      }
     } catch (error) {
-      console.error('Failed to save business card:', error);
-      Alert.alert('エラー', '名刺の保存に失敗しました。もう一度お試しください。');
+      console.error('Failed to save card:', error);
+      Alert.alert('エラー', '名刺の保存に失敗しました');
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
 
-  const updateContactField = (id: string, value: string) => {
-    setContactFields(prev => 
-      prev.map(field => field.id === id ? { ...field, value } : field)
-    );
+  const updateField = (field: keyof BusinessCard, value: string) => {
+    setCardData(prev => ({ ...prev, [field]: value }));
   };
 
-  const updateCompanyField = (id: string, value: string) => {
-    setCompanyFields(prev => 
-      prev.map(field => field.id === id ? { ...field, value } : field)
-    );
-  };
-
-  const updateSocialField = (id: string, value: string) => {
-    setSocialFields(prev => 
-      prev.map(field => field.id === id ? { ...field, value } : field)
-    );
-  };
-
-  const clearContactField = (id: string) => {
-    updateContactField(id, '');
-  };
-
-  const clearCompanyField = (id: string) => {
-    updateCompanyField(id, '');
-  };
-
-  const clearSocialField = (id: string) => {
-    updateSocialField(id, '');
-  };
-
-  const addContactField = () => {
-    const newField: FormField = {
-      id: Date.now().toString(),
-      value: '',
-      placeholder: '新しい連絡先',
-      icon: 'call'
-    };
-    setContactFields(prev => [...prev, newField]);
-  };
-
-  const addCompanyField = () => {
-    const newField: FormField = {
-      id: Date.now().toString(),
-      value: '',
-      placeholder: '新しい会社情報',
-      icon: 'business'
-    };
-    setCompanyFields(prev => [...prev, newField]);
-  };
-
-  const addSocialField = () => {
-    const newField: FormField = {
-      id: Date.now().toString(),
-      value: '',
-      placeholder: '新しいSNS',
-      icon: 'logo-twitter'
-    };
-    setSocialFields(prev => [...prev, newField]);
-  };
-
-  const renderFormField = (
-    field: FormField,
-    onChangeText: (id: string, value: string) => void,
-    onClear: (id: string) => void
+  const renderInputField = (
+    icon: string,
+    placeholder: string,
+    field: keyof BusinessCard,
+    keyboardType: 'default' | 'email-address' | 'phone-pad' | 'url' = 'default'
   ) => (
-    <View key={field.id} style={styles.formField}>
-      <Ionicons name={field.icon as any} size={20} color={Colors.gray} />
-      <TextInput
-        style={styles.textInput}
-        value={field.value}
-        placeholder={field.placeholder}
-        placeholderTextColor={Colors.textSecondary}
-        onChangeText={(text) => onChangeText(field.id, text)}
-        multiline={field.placeholder.includes('住所')}
-        numberOfLines={field.placeholder.includes('住所') ? 2 : 1}
-      />
-      {field.value.length > 0 && (
-        <TouchableOpacity onPress={() => onClear(field.id)} style={styles.clearButton}>
-          <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
+    <View style={styles.inputContainer}>
+      <View style={styles.inputRow}>
+        <Ionicons name={icon as any} size={20} color="#666666" style={styles.inputIcon} />
+        <TextInput
+          style={styles.textInput}
+          placeholder={placeholder}
+          placeholderTextColor="#999999"
+          value={cardData[field] as string || ''}
+          onChangeText={(text) => updateField(field, text)}
+          keyboardType={keyboardType}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+        <TouchableOpacity style={styles.clearButton} onPress={() => updateField(field, '')}>
+          <Ionicons name="close-circle" size={20} color="#CCCCCC" />
         </TouchableOpacity>
-      )}
+      </View>
+    </View>
+  );
+
+  const renderSection = (title: string, icon: string, children: React.ReactNode) => (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <Ionicons name={icon as any} size={20} color="#FF6B35" />
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <TouchableOpacity style={styles.addButton}>
+          <Ionicons name="add" size={20} color="#FF6B35" />
+        </TouchableOpacity>
+      </View>
+      {children}
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.headerButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color={Colors.white} />
-        </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>名刺を編集</Text>
-        
-        <TouchableOpacity style={styles.headerButton} onPress={handleSave}>
-          <Text style={styles.saveButton}>保存</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Business Card Image */}
-        {imageUri && (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: imageUri }} style={styles.cardImage} />
-          </View>
-        )}
-
-        {/* Basic Information Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="person" size={20} color={Colors.primary} />
-            <Text style={styles.sectionTitle}>基本情報</Text>
-          </View>
-          
-          <View style={styles.sectionContent}>
-            {/* Language Selector */}
-            <View style={styles.formField}>
-              <Ionicons name="language" size={20} color={Colors.gray} />
-              <TouchableOpacity style={styles.languageSelector}>
-                <Text style={styles.languageText}>{language}</Text>
-                <Ionicons name="chevron-down" size={16} color={Colors.gray} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Name */}
-            <View style={styles.formField}>
-              <Ionicons name="person" size={20} color={Colors.gray} />
-              <TextInput
-                style={styles.textInput}
-                value={name}
-                placeholder="名前"
-                placeholderTextColor={Colors.textSecondary}
-                onChangeText={setName}
-              />
-              {name.length > 0 && (
-                <TouchableOpacity onPress={() => setName('')} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Position */}
-            <View style={styles.formField}>
-              <Ionicons name="briefcase" size={20} color={Colors.gray} />
-              <TextInput
-                style={styles.textInput}
-                value={position}
-                placeholder="役職"
-                placeholderTextColor={Colors.textSecondary}
-                onChangeText={setPosition}
-              />
-              {position.length > 0 && (
-                <TouchableOpacity onPress={() => setPosition('')} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Company */}
-            <View style={styles.formField}>
-              <Ionicons name="business" size={20} color={Colors.gray} />
-              <TextInput
-                style={styles.textInput}
-                value={company}
-                placeholder="会社名"
-                placeholderTextColor={Colors.textSecondary}
-                onChangeText={setCompany}
-              />
-              {company.length > 0 && (
-                <TouchableOpacity onPress={() => setCompany('')} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Department */}
-            <View style={styles.formField}>
-              <Ionicons name="folder" size={20} color={Colors.gray} />
-              <TextInput
-                style={styles.textInput}
-                value={department}
-                placeholder="部門"
-                placeholderTextColor={Colors.textSecondary}
-                onChangeText={setDepartment}
-              />
-              {department.length > 0 && (
-                <TouchableOpacity onPress={() => setDepartment('')} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={20} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={24} color="#FF6B35" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>名刺を編集</Text>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>保存</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Contact Information Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="call" size={20} color={Colors.primary} />
-            <Text style={styles.sectionTitle}>連絡先情報</Text>
-            <TouchableOpacity onPress={addContactField} style={styles.addButton}>
-              <Ionicons name="add" size={20} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.sectionContent}>
-            {contactFields.map(field => 
-              renderFormField(field, updateContactField, clearContactField)
-            )}
-          </View>
-        </View>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Business Card Image */}
+          {imageUri && (
+            <View style={styles.imageContainer}>
+              <Image source={{ uri: imageUri }} style={styles.cardImage} />
+            </View>
+          )}
 
-        {/* Company Information Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="business" size={20} color={Colors.primary} />
-            <Text style={styles.sectionTitle}>会社情報</Text>
-            <TouchableOpacity onPress={addCompanyField} style={styles.addButton}>
-              <Ionicons name="add" size={20} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.sectionContent}>
-            {companyFields.map(field => 
-              renderFormField(field, updateCompanyField, clearCompanyField)
-            )}
-          </View>
-        </View>
+          {/* Basic Information Section */}
+          {renderSection('基本情報', 'person', (
+            <>
+              <Text style={styles.languageTab}>日本語</Text>
+              <View style={styles.languageUnderline} />
+              
+              {renderInputField('person', '鴨山かほり', 'name')}
+              {renderInputField('briefcase', '役職', 'position')}
+              {renderInputField('business', '統一企業集團', 'company')}
+              {renderInputField('briefcase', '輸入国内事業部', 'department')}
+            </>
+          ))}
 
-        {/* Social Media Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="logo-twitter" size={20} color={Colors.primary} />
-            <Text style={styles.sectionTitle}>ソーシャルメディア</Text>
-            <TouchableOpacity onPress={addSocialField} style={styles.addButton}>
-              <Ionicons name="add" size={20} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.sectionContent}>
-            {socialFields.map(field => 
-              renderFormField(field, updateSocialField, clearSocialField)
-            )}
-          </View>
-        </View>
+          {/* Contact Information Section */}
+          {renderSection('連絡先情報', 'call', (
+            <>
+              {renderInputField('phone-portrait', '070-1319-4481', 'mobile', 'phone-pad')}
+              {renderInputField('call', '03-6264-9166', 'phone', 'phone-pad')}
+              {renderInputField('print', '03-6264-9195', 'fax', 'phone-pad')}
+              {renderInputField('mail', 'k_shigiyama88@ptm-tokyo.co.jp', 'email', 'email-address')}
+              {renderInputField('mail', 'サブメール', 'email', 'email-address')}
+              {renderInputField('link', 'http://ptm-tokyo.co.jp', 'website', 'url')}
+            </>
+          ))}
 
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
-      
-      <LoadingOverlay 
-        visible={isSaving} 
-        message="名刺を保存中..." 
-      />
+          {/* Company Information Section */}
+          {renderSection('会社情報', 'business', (
+            <>
+              {renderInputField('location', '103-0016', 'postalCode')}
+              {renderInputField('location', '東京都中央区日本橋小網町 3-11 日本橋...', 'address')}
+              {renderInputField('grid', '会社ID', 'memo')}
+            </>
+          ))}
+
+          {/* Social Media Section */}
+          {renderSection('ソーシャルメディア', 'logo-instagram', (
+            <>
+              {renderInputField('chatbubble', 'LINE アカウント', 'memo')}
+            </>
+          ))}
+        </ScrollView>
+
+        <LoadingOverlay visible={isLoading} />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -512,123 +234,101 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    backgroundColor: Colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
-  headerButton: {
-    padding: 8,
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.white,
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 16,
+    fontWeight: '600',
+    color: '#FF6B35',
   },
   saveButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  saveButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: Colors.white,
+    fontWeight: '600',
+    color: '#FF6B35',
   },
   content: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    paddingHorizontal: 20,
   },
   imageContainer: {
-    backgroundColor: Colors.white,
-    margin: 16,
-    borderRadius: 8,
-    padding: 16,
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    paddingVertical: 20,
   },
   cardImage: {
-    width: 280,
-    height: 180,
-    borderRadius: 8,
-    backgroundColor: Colors.lightGray,
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    backgroundColor: '#F0F0F0',
   },
   section: {
-    backgroundColor: Colors.white,
-    marginTop: 12,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    marginBottom: 30,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: Colors.primary,
+    fontWeight: '600',
+    color: '#FF6B35',
     marginLeft: 8,
     flex: 1,
   },
   addButton: {
     padding: 4,
   },
-  sectionContent: {
-    paddingVertical: 8,
+  languageTab: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF6B35',
+    marginBottom: 8,
   },
-  formField: {
+  languageUnderline: {
+    height: 2,
+    backgroundColor: '#FF6B35',
+    width: 60,
+    marginBottom: 16,
+  },
+  inputContainer: {
+    marginBottom: 12,
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
+    borderBottomColor: '#E9ECEF',
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   textInput: {
     flex: 1,
-    fontSize: 14,
-    color: Colors.text,
-    marginLeft: 12,
-    paddingVertical: 4,
+    fontSize: 16,
+    color: '#333333',
   },
   clearButton: {
     padding: 4,
-  },
-  languageSelector: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginLeft: 12,
-    paddingVertical: 4,
-  },
-  languageText: {
-    fontSize: 14,
-    color: Colors.text,
-  },
-  bottomSpacing: {
-    height: 40,
   },
 });
 
