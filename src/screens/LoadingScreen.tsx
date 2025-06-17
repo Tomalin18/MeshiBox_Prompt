@@ -1,57 +1,137 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
+  Animated,
+  Dimensions,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+
+const { width, height } = Dimensions.get('window');
 
 const LoadingScreen: React.FC = () => {
+  const navigation = useNavigation();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // 隱藏狀態欄
+    StatusBar.setHidden(true);
+    
+    // 淡入動畫
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+
+    // 2.5秒後導航到訂閱頁面
+    const timer = setTimeout(() => {
+      navigation.navigate('Subscription' as never);
+    }, 2500);
+
+    return () => {
+      clearTimeout(timer);
+      StatusBar.setHidden(false);
+    };
+  }, [navigation, fadeAnim]);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <View style={styles.container}>
+      <StatusBar backgroundColor="#000000" barStyle="light-content" hidden />
       
-      <View style={styles.content}>
-        {/* Logo */}
+      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+        {/* 卡片堆疊圖標 */}
         <View style={styles.logoContainer}>
-          <Ionicons name="business-outline" size={64} color="#666666" />
+          <View style={styles.cardStack}>
+            {/* 後面的卡片 */}
+            <View style={[styles.card, styles.cardBack]} />
+            {/* 中間的卡片 */}
+            <View style={[styles.card, styles.cardMiddle]} />
+            {/* 前面的卡片 */}
+            <View style={[styles.card, styles.cardFront]} />
+          </View>
         </View>
-        
-        {/* App Name */}
-        <Text style={styles.appName}>MeishiBox</Text>
-        
-        {/* Loading Text */}
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    </SafeAreaView>
+
+        {/* 文字區域 */}
+        <View style={styles.textContainer}>
+          <Text style={styles.appName}>MeishiBox</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   logoContainer: {
-    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  cardStack: {
+    width: 80,
+    height: 60,
+    position: 'relative',
+  },
+  card: {
+    position: 'absolute',
+    width: 80,
+    height: 60,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 4,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  cardBack: {
+    top: 8,
+    left: 8,
+    opacity: 0.6,
+  },
+  cardMiddle: {
+    top: 4,
+    left: 4,
+    opacity: 0.8,
+  },
+  cardFront: {
+    top: 0,
+    left: 0,
+    opacity: 1,
+  },
+  textContainer: {
+    alignItems: 'center',
   },
   appName: {
     fontSize: 32,
-    fontWeight: '400',
-    color: '#333333',
-    marginBottom: 40,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontFamily: 'System',
+    textAlign: 'center',
+    marginBottom: 12,
   },
   loadingText: {
     fontSize: 16,
+    fontWeight: '400',
     color: '#CCCCCC',
-    fontWeight: '300',
+    fontFamily: 'System',
+    textAlign: 'center',
   },
 });
 
