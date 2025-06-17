@@ -28,6 +28,11 @@ ConfigError: The expected package.json path: /Users/xxx/package.json does not ex
    npx expo start
    ```
 
+**實際案例解決記錄：**
+- 用戶在 `/Users/toma/Desktop/Meishibox_prompt` 目錄執行命令
+- 正確目錄應該是 `/Users/toma/Desktop/Meishibox_prompt/MeishiBox`
+- 解決方法：`cd MeishiBox` 然後執行 `npx expo start`
+
 ### 2. iOS 模擬器啟動問題
 
 **問題描述：**
@@ -176,7 +181,49 @@ CSV 或 vCard 導出功能失效。
    npx expo install
    ```
 
-### 8. TypeScript 錯誤
+**實際案例解決記錄：**
+使用 `npx expo-doctor` 診斷發現以下依賴版本問題：
+```
+expo-camera@16.0.18 - expected version: ~16.1.8
+expo-image-picker@16.0.6 - expected version: ~16.1.4
+expo-linear-gradient@14.0.2 - expected version: ~14.1.5
+react-native-safe-area-context@4.12.0 - expected version: 5.4.0
+react-native-screens@4.1.0 - expected version: ~4.11.1
+```
+解決方法：執行 `npx expo install --check` 自動更新到兼容版本。
+
+### 8. 缺失資源文件錯誤
+
+**問題描述：**
+```
+Field: Splash.image - cannot access file at './assets/splash.png'
+```
+
+**原因：**
+app.json 配置中引用的資源文件不存在。
+
+**解決方案：**
+
+1. **檢查 assets 目錄：**
+   ```bash
+   ls -la assets/
+   ```
+
+2. **創建缺失的文件：**
+   ```bash
+   # 如果有類似的文件，可以複製
+   cp assets/splash-icon.png assets/splash.png
+   ```
+
+3. **或者更新 app.json 配置：**
+   修改 `app.json` 中的路徑指向實際存在的文件。
+
+**實際案例解決記錄：**
+- 錯誤：`Field: Splash.image - cannot access file at './assets/splash.png'`
+- 發現：assets 目錄中有 `splash-icon.png` 但缺少 `splash.png`
+- 解決：執行 `cp assets/splash-icon.png assets/splash.png`
+
+### 9. TypeScript 錯誤
 
 **問題描述：**
 TypeScript 編譯錯誤。
