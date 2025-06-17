@@ -7,12 +7,17 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
 
-const LoadingScreen: React.FC = () => {
-  const navigation = useNavigation();
+interface Props {
+  navigation: {
+    navigate: (screen: string, params?: any) => void;
+    goBack: () => void;
+  };
+}
+
+const LoadingScreen: React.FC<Props> = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -28,7 +33,7 @@ const LoadingScreen: React.FC = () => {
 
     // 2.5秒後導航到訂閱頁面
     const timer = setTimeout(() => {
-      navigation.navigate('Subscription' as never);
+      navigation.navigate('Subscription');
     }, 2500);
 
     return () => {

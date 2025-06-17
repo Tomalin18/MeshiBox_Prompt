@@ -1,34 +1,53 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import LoadingScreen from './src/screens/LoadingScreen';
+import SubscriptionScreen from './src/screens/SubscriptionScreen';
 import CameraScreen from './src/screens/CameraScreen';
 import CardDetailScreen from './src/screens/CardDetailScreen';
 import CardEditScreen from './src/screens/CardEditScreen';
 import CardListScreen from './src/screens/CardListScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
-type ScreenType = 'camera' | 'detail' | 'edit' | 'list' | 'settings';
+type ScreenType = 'loading' | 'subscription' | 'camera' | 'detail' | 'edit' | 'list' | 'settings';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('list');
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>('loading');
+  const [showDevNav, setShowDevNav] = useState(false);
 
   const mockNavigation = {
-    goBack: () => setCurrentScreen('list'),
+    goBack: () => {
+      if (currentScreen === 'detail' || currentScreen === 'edit') {
+        setCurrentScreen('list');
+      } else if (currentScreen === 'camera') {
+        setCurrentScreen('list');
+      } else {
+        setCurrentScreen('list');
+      }
+    },
     navigate: (screen: string, params?: any) => {
-      if (screen === 'CardEdit') {
+      if (screen === 'Subscription') {
+        setCurrentScreen('subscription');
+      } else if (screen === 'CardList') {
+        setCurrentScreen('list');
+      } else if (screen === 'CardEdit') {
         setCurrentScreen('edit');
       } else if (screen === 'CardDetail') {
         setCurrentScreen('detail');
       } else if (screen === 'Camera') {
         setCurrentScreen('camera');
-      } else if (screen === 'CardList') {
-        setCurrentScreen('list');
+      } else if (screen === 'Settings') {
+        setCurrentScreen('settings');
       }
     },
   };
 
   const renderScreen = () => {
     switch (currentScreen) {
+      case 'loading':
+        return <LoadingScreen navigation={mockNavigation} />;
+      case 'subscription':
+        return <SubscriptionScreen navigation={mockNavigation} />;
       case 'camera':
         return <CameraScreen navigation={mockNavigation} />;
       case 'detail':
@@ -40,7 +59,7 @@ export default function App() {
       case 'settings':
         return <SettingsScreen navigation={mockNavigation} />;
       default:
-        return <CardListScreen navigation={mockNavigation} />;
+        return <LoadingScreen navigation={mockNavigation} />;
     }
   };
 
@@ -49,39 +68,51 @@ export default function App() {
       <StatusBar style="light" />
       {renderScreen()}
       
-      {/* Development Navigation */}
-      <View style={styles.devNav}>
+      {/* Development Navigation - 只在非載入和訂閱畫面顯示 */}
+      {showDevNav && currentScreen !== 'loading' && currentScreen !== 'subscription' && (
+        <View style={styles.devNav}>
+          <TouchableOpacity 
+            style={[styles.navButton, currentScreen === 'list' && styles.activeButton]} 
+            onPress={() => setCurrentScreen('list')}
+          >
+            <Text style={styles.navText}>List</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.navButton, currentScreen === 'camera' && styles.activeButton]} 
+            onPress={() => setCurrentScreen('camera')}
+          >
+            <Text style={styles.navText}>Cam</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.navButton, currentScreen === 'detail' && styles.activeButton]} 
+            onPress={() => setCurrentScreen('detail')}
+          >
+            <Text style={styles.navText}>Detail</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.navButton, currentScreen === 'edit' && styles.activeButton]} 
+            onPress={() => setCurrentScreen('edit')}
+          >
+            <Text style={styles.navText}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.navButton, currentScreen === 'settings' && styles.activeButton]} 
+            onPress={() => setCurrentScreen('settings')}
+          >
+            <Text style={styles.navText}>Set</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      
+      {/* 開發者模式切換按鈕 */}
+      {currentScreen !== 'loading' && currentScreen !== 'subscription' && (
         <TouchableOpacity 
-          style={[styles.navButton, currentScreen === 'camera' && styles.activeButton]} 
-          onPress={() => setCurrentScreen('camera')}
+          style={styles.devToggle}
+          onPress={() => setShowDevNav(!showDevNav)}
         >
-          <Text style={styles.navText}>Camera</Text>
+          <Text style={styles.devToggleText}>{showDevNav ? '隱藏' : '開發'}</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.navButton, currentScreen === 'list' && styles.activeButton]} 
-          onPress={() => setCurrentScreen('list')}
-        >
-          <Text style={styles.navText}>List</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.navButton, currentScreen === 'detail' && styles.activeButton]} 
-          onPress={() => setCurrentScreen('detail')}
-        >
-          <Text style={styles.navText}>Detail</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.navButton, currentScreen === 'edit' && styles.activeButton]} 
-          onPress={() => setCurrentScreen('edit')}
-        >
-          <Text style={styles.navText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.navButton, currentScreen === 'settings' && styles.activeButton]} 
-          onPress={() => setCurrentScreen('settings')}
-        >
-          <Text style={styles.navText}>Settings</Text>
-        </TouchableOpacity>
-      </View>
+      )}
     </View>
   );
 }
@@ -93,7 +124,7 @@ const styles = StyleSheet.create({
   },
   devNav: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 80,
     left: 20,
     right: 20,
     flexDirection: 'row',
@@ -103,7 +134,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   navButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 15,
   },
@@ -112,7 +143,21 @@ const styles = StyleSheet.create({
   },
   navText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  devToggle: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: 'rgba(255, 107, 53, 0.8)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  devToggleText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });
