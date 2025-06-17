@@ -21,8 +21,8 @@ const LoadingScreen: React.FC<Props> = ({ navigation }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // 隱藏狀態欄
-    StatusBar.setHidden(true);
+    // 設置狀態欄為深色內容（適合白色背景）
+    StatusBar.setBarStyle('dark-content');
     
     // 淡入動畫
     Animated.timing(fadeAnim, {
@@ -38,13 +38,12 @@ const LoadingScreen: React.FC<Props> = ({ navigation }) => {
 
     return () => {
       clearTimeout(timer);
-      StatusBar.setHidden(false);
     };
   }, [navigation, fadeAnim]);
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#000000" barStyle="light-content" hidden />
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         {/* 卡片堆疊圖標 */}
@@ -72,7 +71,7 @@ const LoadingScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -94,26 +93,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 80,
     height: 60,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
     shadowColor: '#000000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 1,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   cardBack: {
     top: 8,
     left: 8,
-    opacity: 0.6,
+    opacity: 0.7,
   },
   cardMiddle: {
     top: 4,
     left: 4,
-    opacity: 0.8,
+    opacity: 0.85,
   },
   cardFront: {
     top: 0,
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 32,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#333333',
     fontFamily: 'System',
     textAlign: 'center',
     marginBottom: 12,
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#CCCCCC',
+    color: '#999999',
     fontFamily: 'System',
     textAlign: 'center',
   },
