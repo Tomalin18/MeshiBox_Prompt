@@ -12,17 +12,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Colors } from '../constants/Colors';
-import { 
-  UserSubscription, 
-  getDefaultSubscription, 
-  getPremiumSubscription,
-  canUsePremiumFeature,
-  getRemainingTrialDays,
-  openAppStore,
-  getSupportEmail,
-  getSupportWebsite
-} from '../utils';
 import { StorageService } from '../services/StorageService';
 import { ExportService } from '../services/ExportService';
 
@@ -33,10 +22,22 @@ interface Props {
   };
 }
 
-
+interface UserSubscription {
+  status: 'free' | 'trial' | 'premium';
+  remainingScans: number;
+  maxScans: number;
+  features: string[];
+  expiryDate?: Date;
+  trialDays?: number;
+}
 
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
-  const [subscription, setSubscription] = useState<UserSubscription>(getDefaultSubscription());
+  const [subscription, setSubscription] = useState<UserSubscription>({
+    status: 'free',
+    remainingScans: 50,
+    maxScans: 50,
+    features: [],
+  });
   const [scanCount, setScanCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,37 +49,34 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
   const loadUserData = async () => {
     try {
-      const userSubscription = await StorageService.getUserSubscription();
       const currentScanCount = await StorageService.getScanCount();
-      
-      if (userSubscription) {
-        setSubscription(userSubscription);
-      }
       setScanCount(currentScanCount);
+      
+      // Update remaining scans
+      setSubscription(prev => ({
+        ...prev,
+        remainingScans: Math.max(0, prev.maxScans - currentScanCount),
+      }));
     } catch (error) {
       console.error('Failed to load user data:', error);
     }
   };
 
   const handleRestorePurchase = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      // Mock restore purchase functionality
       Alert.alert(
         '購入を復元',
         '購入の復元を開始しています...',
         [
-          {
-            text: 'キャンセル',
-            style: 'cancel',
-          },
+          { text: 'キャンセル', style: 'cancel' },
           {
             text: 'OK',
             onPress: () => {
-              // Simulate restore process
-                             setTimeout(() => {
-                 Alert.alert('成功', '購入が復元されました');
-                 setSubscription(getPremiumSubscription());
-               }, 1000);
+              setTimeout(() => {
+                Alert.alert('成功', '購入が復元されました');
+                setSubscription({ ...subscription, status: 'premium' });
+              }, 1000);
             },
           },
         ]
@@ -91,15 +89,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const handleExportFeatures = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    if (!canUsePremiumFeature(subscription, 'exportFeatures')) {
+    if (subscription.status === 'free') {
       Alert.alert(
         'Pro機能',
         'この機能を使用するにはPro版にアップグレードしてください',
         [
-          {
-            text: 'キャンセル',
-            style: 'cancel',
-          },
+          { text: 'キャンセル', style: 'cancel' },
           {
             text: 'アップグレード',
             onPress: () => {
@@ -111,7 +106,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         ]
       );
     } else {
-      // Show export options
       Alert.alert(
         'エクスポート',
         'エクスポート形式を選択してください',
@@ -130,8 +124,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     
     try {
       setIsLoading(true);
-      
-      // Get all business cards
       const businessCards = await StorageService.getAllBusinessCards();
       
       if (businessCards.length === 0) {
@@ -144,20 +136,14 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           await ExportService.saveAndShareCSV(businessCards);
           Alert.alert('成功', 'CSV ファイルが作成されました');
           break;
-          
         case 'vcard':
           await ExportService.saveAndShareVCard(businessCards);
           Alert.alert('成功', 'vCard ファイルが作成されました');
           break;
-          
         case 'contacts':
           const result = await ExportService.exportToContacts(businessCards);
-          Alert.alert(
-            '連絡先に追加完了',
-            `成功: ${result.success}件\n失敗: ${result.failed}件`
-          );
+          Alert.alert('連絡先に追加完了', `成功: ${result.success}件\n失敗: ${result.failed}件`);
           break;
-          
         default:
           Alert.alert('エラー', 'サポートされていない形式です');
       }
@@ -175,13 +161,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
       'App Storeでアプリを評価しますか？',
       [
         { text: 'キャンセル', style: 'cancel' },
-                 {
-           text: '評価する',
-           onPress: () => {
-             // In real app, this would open the App Store
-             Linking.openURL(openAppStore());
-           },
-         },
+        {
+          text: '評価する',
+          onPress: () => {
+            Linking.openURL('https://apps.apple.com/app/id123456789');
+          },
+        },
       ]
     );
   };
@@ -191,18 +176,18 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
       'お問い合わせ',
       'お問い合わせ方法を選択してください',
       [
-                 {
-           text: 'メール',
-           onPress: () => {
-             Linking.openURL(`mailto:${getSupportEmail()}?subject=MeishiBox お問い合わせ`);
-           },
-         },
-         {
-           text: 'ウェブサイト',
-           onPress: () => {
-             Linking.openURL(getSupportWebsite());
-           },
-         },
+        {
+          text: 'メール',
+          onPress: () => {
+            Linking.openURL('mailto:support@meishibox.com?subject=MeishiBox お問い合わせ');
+          },
+        },
+        {
+          text: 'ウェブサイト',
+          onPress: () => {
+            Linking.openURL('https://meishibox.com/support');
+          },
+        },
         { text: 'キャンセル', style: 'cancel' },
       ]
     );
@@ -232,108 +217,99 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const renderSectionHeader = (title: string) => (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionHeaderText}>{title}</Text>
-    </View>
-  );
-
   const renderMenuItem = (
     icon: string,
     title: string,
     subtitle?: string,
     onPress?: () => void,
-    showArrow: boolean = true,
-    rightIcon?: string
+    showArrow: boolean = true
   ) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <View style={styles.menuItemLeft}>
-        <Ionicons name={icon as any} size={24} color={Colors.gray} />
+        <View style={styles.iconContainer}>
+          <Ionicons name={icon as any} size={20} color="#FF6B35" />
+        </View>
         <View style={styles.menuItemText}>
           <Text style={styles.menuItemTitle}>{title}</Text>
           {subtitle && <Text style={styles.menuItemSubtitle}>{subtitle}</Text>}
         </View>
       </View>
-      <View style={styles.menuItemRight}>
-        {rightIcon && (
-          <Ionicons name={rightIcon as any} size={20} color={Colors.gray} style={styles.rightIcon} />
-        )}
-        {showArrow && (
-          <Ionicons name="chevron-forward" size={20} color={Colors.gray} />
-        )}
-      </View>
+      {showArrow && (
+        <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
+      )}
     </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>設定</Text>
-      </View>
-
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>設定</Text>
+        </View>
+
         {/* Membership Section */}
         <View style={styles.section}>
-          {renderSectionHeader('メンバーシップ')}
-          <View style={styles.sectionContent}>
-            {renderMenuItem(
-              getMembershipIcon(),
-              getMembershipStatusText(),
-              `残りスキャン回数: ${subscription.remainingScans}`,
-              undefined,
-              false
-            )}
-            {renderMenuItem(
-              'refresh',
-              '購入を復元',
-              undefined,
-              handleRestorePurchase,
-              true,
-              'refresh'
-            )}
+          <Text style={styles.sectionTitle}>メンバーシップ</Text>
+          
+          <View style={styles.membershipCard}>
+            <View style={styles.membershipInfo}>
+              <Ionicons name={getMembershipIcon() as any} size={24} color="#FF6B35" />
+              <View style={styles.membershipText}>
+                <Text style={styles.membershipStatus}>{getMembershipStatusText()}</Text>
+                <Text style={styles.membershipSubtitle}>
+                  残りスキャン回数: {subscription.remainingScans}
+                </Text>
+              </View>
+            </View>
           </View>
+
+          {renderMenuItem(
+            'refresh',
+            '購入を復元',
+            undefined,
+            handleRestorePurchase,
+            true
+          )}
         </View>
 
         {/* Pro Features Section */}
         <View style={styles.section}>
-          {renderSectionHeader('Pro機能')}
-          <View style={styles.sectionContent}>
-            {renderMenuItem(
-              'document-text',
-              'エクスポート機能',
-              'CSV, Excel, PDF形式で出力',
-              handleExportFeatures,
-              true
-            )}
-          </View>
+          <Text style={styles.sectionTitle}>settings.section.pro_features</Text>
+          
+          {renderMenuItem(
+            'document-text',
+            'settings.pro_features.export_to_...',
+            undefined,
+            handleExportFeatures,
+            true
+          )}
         </View>
 
         {/* Support Section */}
         <View style={styles.section}>
-          {renderSectionHeader('サポート')}
-          <View style={styles.sectionContent}>
-            {renderMenuItem(
-              'thumbs-up',
-              '評価する',
-              'App Storeで評価',
-              handleRateApp,
-              true
-            )}
-            {renderMenuItem(
-              'chatbubble-ellipses',
-              'お問い合わせ',
-              'ヘルプとサポート',
-              handleContact,
-              true
-            )}
-          </View>
+          <Text style={styles.sectionTitle}>サポート</Text>
+          
+          {renderMenuItem(
+            'thumbs-up',
+            '評価する',
+            undefined,
+            handleRateApp,
+            true
+          )}
+          
+          {renderMenuItem(
+            'chatbubble-ellipses',
+            'お問い合わせ',
+            undefined,
+            handleContact,
+            true
+          )}
         </View>
 
         {/* App Info Section */}
         <View style={styles.appInfoSection}>
-          <Text style={styles.appVersion}>Ver. {appVersion}</Text>
-          <Text style={styles.madeIn}>Made in Keelung ❤️</Text>
+          <Text style={styles.appVersion}>Ver. {appVersion} Made in Keelung ❤️</Text>
         </View>
 
         <View style={styles.bottomSpacing} />
@@ -345,83 +321,105 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F5F5F5',
+  },
+  content: {
+    flex: 1,
   },
   header: {
-    backgroundColor: Colors.primary,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    paddingVertical: 20,
+    marginBottom: 20,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.white,
-  },
-  content: {
-    flex: 1,
-    backgroundColor: Colors.lightGray,
+    color: '#333333',
   },
   section: {
-    marginTop: 20,
+    marginBottom: 32,
   },
-  sectionHeader: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  sectionHeaderText: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.white,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: '#FF6B35',
+    marginBottom: 16,
+    paddingHorizontal: 20,
   },
-  sectionContent: {
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  membershipCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  membershipInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  membershipText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  membershipStatus: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 4,
+  },
+  membershipSubtitle: {
+    fontSize: 14,
+    color: '#666666',
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 8,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
-    backgroundColor: Colors.white,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#FFF3E0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   menuItemText: {
-    marginLeft: 16,
+    marginLeft: 12,
     flex: 1,
   },
   menuItemTitle: {
     fontSize: 16,
-    color: Colors.text,
+    color: '#333333',
     fontWeight: '500',
   },
   menuItemSubtitle: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: '#666666',
     marginTop: 2,
-  },
-  menuItemRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  rightIcon: {
-    marginRight: 8,
   },
   appInfoSection: {
     alignItems: 'center',
@@ -429,15 +427,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   appVersion: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  madeIn: {
     fontSize: 14,
-    color: Colors.textSecondary,
-    fontStyle: 'italic',
+    color: '#999999',
+    textAlign: 'center',
   },
   bottomSpacing: {
     height: 40,

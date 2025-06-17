@@ -183,6 +183,37 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 
+  const renderSectionItem = ({ item }: { item: { letter: string; cards: BusinessCard[] } }) => (
+    <View style={styles.sectionContainer}>
+      <Text style={styles.sectionHeader}>{item.letter}</Text>
+      {item.cards.map((card) => (
+        <View key={card.id}>
+          {renderCard({ item: card })}
+        </View>
+      ))}
+    </View>
+  );
+
+  // Group cards by first letter
+  const groupedCards = React.useMemo(() => {
+    const groups: { [key: string]: BusinessCard[] } = {};
+    
+    filteredCards.forEach(card => {
+      const firstLetter = card.name.charAt(0).toUpperCase();
+      if (!groups[firstLetter]) {
+        groups[firstLetter] = [];
+      }
+      groups[firstLetter].push(card);
+    });
+
+    return Object.keys(groups)
+      .sort()
+      .map(letter => ({
+        letter,
+        cards: groups[letter].sort((a, b) => a.name.localeCompare(b.name))
+      }));
+  }, [filteredCards]);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -228,22 +259,25 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
         </Text>
       </View>
 
-      <FlatList
-        data={filteredCards}
-        renderItem={renderCard}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={renderEmptyState}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      {filteredCards.length === 0 && !isLoading ? (
+        renderEmptyState()
+      ) : (
+        <FlatList
+          data={groupedCards}
+          renderItem={renderSectionItem}
+          keyExtractor={item => item.letter}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <LoadingOverlay visible={isLoading} message="名刺を読み込み中..." />
     </SafeAreaView>
@@ -405,6 +439,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.white,
     marginLeft: 8,
+  },
+  sectionContainer: {
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#F5F5F5',
   },
 });
 
