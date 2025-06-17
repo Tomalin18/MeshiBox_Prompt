@@ -1,207 +1,207 @@
-# MeishiBox - 名刺管理アプリ
+# MeishiBox - 名片管理應用程式
 
-MeishiBox は、名刺をスキャンして管理するための React Native / Expo アプリケーションです。OCR 技術を使用して名刺の情報を自動的に抽出し、デジタル形式で保存・管理できます。
+MeishiBox 是一款用於掃描與管理名片的 React Native / Expo 應用程式。利用 OCR 技術自動擷取名片資訊，讓您方便地數位化並管理聯絡人資料。
 
-## 🚀 主な機能
+## 🚀 主要功能
 
-### 📷 名刺スキャン
-- カメラを使用した名刺の撮影
-- 横向き・縦向きの名刺に対応
-- フラッシュ機能付き
-- ギャラリーからの画像選択も可能
+### 📷 名片掃描
+- 使用相機拍攝名片
+- 支援橫式與直式名片
+- 具備閃光燈功能
+- 可從相簿選取圖片
 
-### 🔍 OCR 文字認識
-- 日本語名刺の自動文字認識
-- 名前、会社名、部署、職位の自動抽出
-- 電話番号、メールアドレス、ウェブサイトの認識
-- 住所、郵便番号の抽出
+### 🔍 OCR 文字辨識
+- 自動辨識繁體中文名片文字
+- 自動擷取姓名、公司名稱、部門、職稱
+- 辨識電話、電子郵件、網站
+- 擷取地址與郵遞區號
 
-### 📝 名刺編集
-- OCR で抽出されたデータの編集
-- 手動での情報追加・修正
-- 複数の連絡先情報に対応
-- ソーシャルメディアアカウントの追加
+### 📝 名片編輯
+- 編輯 OCR 擷取的資料
+- 可手動新增與修正資訊
+- 支援多組聯絡方式
+- 可新增社群帳號
 
-### 📋 名刺管理
-- 名刺一覧の表示
-- 検索・フィルタリング機能
-- 名刺の詳細表示
-- 名刺の削除機能
+### 📋 名片管理
+- 顯示名片列表
+- 搜尋與篩選功能
+- 詳細檢視名片
+- 刪除名片
 
-### 📤 エクスポート機能
-- CSV 形式でのエクスポート
-- vCard 形式でのエクスポート
-- システム連絡先への追加
-- ファイル共有機能
+### 📤 匯出功能
+- 匯出為 CSV 格式
+- 匯出為 vCard 格式
+- 可加入系統聯絡人
+- 檔案分享功能
 
-### ⚙️ 設定・管理
-- ユーザー購読管理
-- スキャン回数制限
-- アプリ設定
-- データバックアップ・復元
+### ⚙️ 設定與管理
+- 使用者訂閱管理
+- 掃描次數限制
+- 應用程式設定
+- 資料備份與還原
 
-## 🛠️ 技術仕様
+## 🛠️ 技術規格
 
 ### 使用技術
 - **React Native**: 0.79.3
 - **Expo SDK**: 53.0.0+
-- **TypeScript**: 完全型安全
-- **AsyncStorage**: ローカルデータ保存
+- **TypeScript**: 完整型別安全
+- **AsyncStorage**: 本機資料保存
 
-### 主要依存関係
+### 主要依賴
 ```json
 {
-  "expo-camera": "カメラ機能",
-  "expo-image-picker": "画像選択",
-  "expo-image-manipulator": "画像処理",
-  "expo-contacts": "連絡先統合",
-  "expo-haptics": "触覚フィードバック",
-  "expo-file-system": "ファイル操作",
-  "expo-sharing": "ファイル共有",
-  "@react-native-async-storage/async-storage": "データ保存"
+  "expo-camera": "相機功能",
+  "expo-image-picker": "圖片選取",
+  "expo-image-manipulator": "圖片處理",
+  "expo-contacts": "聯絡人整合",
+  "expo-haptics": "觸覺回饋",
+  "expo-file-system": "檔案操作",
+  "expo-sharing": "檔案分享",
+  "@react-native-async-storage/async-storage": "資料儲存"
 }
 ```
 
-## 📱 インストールと実行
+## 📱 安裝與執行
 
-### 前提条件
+### 前置條件
 - Node.js 18+ 
 - Expo CLI
-- iOS Simulator または Android Emulator
+- iOS 模擬器或 Android 模擬器
 
-### セットアップ
+### 安裝步驟
 ```bash
-# プロジェクトのクローン
+# 複製專案
 git clone <repository-url>
 cd MeishiBox
 
-# 依存関係のインストール
+# 安裝相依套件
 npm install
 
-# Expo 依存関係の同期
+# 同步 Expo 相依套件
 npx expo install
 
-# 開発サーバーの起動
+# 啟動開發伺服器
 npx expo start
 ```
 
-### 実行
+### 執行方式
 ```bash
-# iOS での実行
+# 在 iOS 執行
 npx expo run:ios
 
-# Android での実行
+# 在 Android 執行
 npx expo run:android
 
-# Web での実行
+# 在瀏覽器執行
 npx expo start --web
 ```
 
-## 🏗️ プロジェクト構造
+## 🏗️ 專案結構
 
 ```
 MeishiBox/
 ├── src/
-│   ├── components/          # 再利用可能なコンポーネント
+│   ├── components/          # 可重複使用元件
 │   │   └── LoadingOverlay.tsx
-│   ├── constants/           # 定数定義
+│   ├── constants/           # 常數定義
 │   │   └── Colors.ts
-│   ├── screens/            # 画面コンポーネント
+│   ├── screens/            # 畫面元件
 │   │   ├── CameraScreen.tsx
 │   │   ├── CardDetailScreen.tsx
 │   │   ├── CardEditScreen.tsx
 │   │   ├── CardListScreen.tsx
 │   │   └── SettingsScreen.tsx
-│   ├── services/           # ビジネスロジック
+│   ├── services/           # 商業邏輯
 │   │   ├── OCRService.ts
 │   │   ├── StorageService.ts
 │   │   └── ExportService.ts
-│   ├── types/              # TypeScript 型定義
+│   ├── types/              # TypeScript 型別定義
 │   │   └── index.ts
-│   └── utils/              # ユーティリティ関数
+│   └── utils/              # 工具函式
 │       └── index.ts
-├── App.tsx                 # メインアプリコンポーネント
+├── App.tsx                 # 主應用程式元件
 ├── app.json               # Expo 設定
-└── package.json           # 依存関係
+└── package.json           # 相依套件
 ```
 
-## 🎯 使用方法
+## 🎯 使用方式
 
-### 1. 名刺のスキャン
-1. カメラアイコンをタップ
-2. 名刺を枠内に配置
-3. 横向き/縦向きを選択
-4. シャッターボタンでスキャン
+### 1. 掃描名片
+1. 點選相機圖示
+2. 將名片放在框內
+3. 選擇橫式／直式
+4. 按下快門掃描
 
-### 2. 情報の編集
-1. OCR で自動抽出された情報を確認
-2. 必要に応じて手動で修正・追加
-3. 「保存」ボタンで保存
+### 2. 編輯資訊
+1. 確認 OCR 自動擷取的資訊
+2. 如有需要手動修正或新增
+3. 按下「儲存」按鈕
 
-### 3. 名刺の管理
-1. 名刺一覧で保存された名刺を確認
-2. 検索バーで名刺を検索
-3. 名刺をタップして詳細表示
+### 3. 管理名片
+1. 在名片列表檢視已儲存名片
+2. 以搜尋列搜尋名片
+3. 點選名片以查看詳細資訊
 
-### 4. データのエクスポート
-1. 設定画面から「エクスポート機能」を選択
-2. 形式を選択（CSV、vCard、連絡先）
-3. ファイルを共有または保存
+### 4. 匯出資料
+1. 於設定頁面選擇「匯出功能」
+2. 選擇格式（CSV、vCard、聯絡人）
+3. 分享或儲存檔案
 
-## 🔧 開発者向け情報
+## 🔧 開發者資訊
 
-### OCR サービス
-現在はモック実装を使用していますが、本番環境では以下の OCR サービスと統合可能：
+### OCR 服務
+目前為模擬實作，正式環境可整合下列 OCR 服務：
 - Google Cloud Vision API
 - AWS Textract
 - Azure Computer Vision
 
-### カスタマイズ
-- `src/constants/Colors.ts`: カラーテーマの変更
-- `src/services/OCRService.ts`: OCR ロジックの実装
-- `src/utils/index.ts`: バリデーション関数の追加
+### 客製化
+- `src/constants/Colors.ts`: 更改色彩主題
+- `src/services/OCRService.ts`: 實作 OCR 邏輯
+- `src/utils/index.ts`: 新增驗證函式
 
-### テスト
+### 測試
 ```bash
-# 単体テストの実行
+# 執行單元測試
 npm test
 
-# E2E テストの実行
+# 執行 E2E 測試
 npx detox test
 ```
 
-## 📄 ライセンス
+## 📄 授權
 
-このプロジェクトは MIT ライセンスの下で公開されています。
+本專案採用 MIT 授權條款。
 
-## 🤝 コントリビューション
+## 🤝 貢獻方式
 
-1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/AmazingFeature`)
-3. 変更をコミット (`git commit -m 'Add some AmazingFeature'`)
-4. ブランチにプッシュ (`git push origin feature/AmazingFeature`)
-5. プルリクエストを作成
+1. 將此儲存庫 fork
+2. 建立功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交變更 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送分支 (`git push origin feature/AmazingFeature`)
+5. 建立 Pull Request
 
-## 📞 サポート
+## 📞 支援
 
-質問やサポートが必要な場合は、以下までお問い合わせください：
+若有問題或需要協助，請聯繫：
 - Email: support@meishibox.com
-- Website: https://meishibox.com/support
+- 官方網站: https://meishibox.com/support
 
-## 🔄 更新履歴
+## 🔄 更新紀錄
 
-### v1.0.4 (最新)
-- OCR 機能の統合
-- データ永続化の実装
-- エクスポート機能の追加
-- 触覚フィードバックの実装
-- UI/UX の改善
+### v1.0.4（最新）
+- 整合 OCR 功能
+- 實作資料持久化
+- 新增匯出功能
+- 加入觸覺回饋
+- 改善 UI/UX
 
 ### v1.0.0
-- 初期リリース
-- 基本的なカメラ機能
-- 名刺編集機能
-- 設定画面
+- 初始版本
+- 基本相機功能
+- 名片編輯功能
+- 設定頁面
 
 ---
 
