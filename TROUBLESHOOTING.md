@@ -223,7 +223,47 @@ app.json 配置中引用的資源文件不存在。
 - 發現：assets 目錄中有 `splash-icon.png` 但缺少 `splash.png`
 - 解決：執行 `cp assets/splash-icon.png assets/splash.png`
 
-### 9. TypeScript 錯誤
+### 9. 文件系統權限錯誤
+
+**問題描述：**
+```
+ERROR Failed to load business cards: [Error: Failed to create storage directory.Error Domain=NSCocoaErrorDomain Code=512 "The file "@anonymous" couldn't be saved in the folder "ExponentExperienceData".]
+```
+
+**原因：**
+iOS 模擬器中的文件系統權限問題，無法在指定目錄創建或寫入文件。
+
+**解決方案：**
+
+1. **重置 iOS 模擬器：**
+   ```bash
+   # 在 Xcode 中：Device > Erase All Content and Settings
+   # 或使用命令行：
+   xcrun simctl erase all
+   ```
+
+2. **清理應用數據：**
+   ```bash
+   # 停止 Expo 服務器
+   pkill -f "expo start"
+   
+   # 清理緩存
+   npx expo start --clear
+   ```
+
+3. **檢查應用權限：**
+   確保 app.json 中包含必要的文件系統權限配置。
+
+4. **使用物理設備測試：**
+   如果模擬器問題持續，嘗試在真實設備上測試。
+
+**實際案例解決記錄：**
+- 錯誤：iOS 模擬器中無法創建存儲目錄
+- 原因：`FileSystem.documentDirectory` 權限問題
+- 解決：修改 `ExportService.ts` 添加 `ensureDirectoryExists()` 方法
+- 實現：檢查目錄存在性，如果失敗則降級到緩存目錄
+
+### 10. TypeScript 錯誤
 
 **問題描述：**
 TypeScript 編譯錯誤。

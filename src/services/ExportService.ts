@@ -58,12 +58,44 @@ export class ExportService {
     }
   }
 
+  // 輔助方法：確保文件目錄存在
+  private static async ensureDirectoryExists(): Promise<string> {
+    try {
+      const documentDirectory = FileSystem.documentDirectory;
+      if (!documentDirectory) {
+        throw new Error('Document directory not available');
+      }
+
+      // 檢查目錄是否存在
+      const dirInfo = await FileSystem.getInfoAsync(documentDirectory);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(documentDirectory, { intermediates: true });
+      }
+
+      return documentDirectory;
+    } catch (error) {
+      console.error('Failed to ensure directory exists:', error);
+      // 降級到緩存目錄
+      const cacheDirectory = FileSystem.cacheDirectory;
+      if (cacheDirectory) {
+        const dirInfo = await FileSystem.getInfoAsync(cacheDirectory);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(cacheDirectory, { intermediates: true });
+        }
+        return cacheDirectory;
+      }
+      throw new Error('No available directory for file storage');
+    }
+  }
+
   // 保存 CSV 文件並分享
   static async saveAndShareCSV(businessCards: BusinessCard[]): Promise<void> {
     try {
       const csvContent = await this.exportToCSV(businessCards);
       const fileName = `MeishiBox_名片數據_${new Date().toISOString().split('T')[0]}.csv`;
-      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      const baseDirectory = await this.ensureDirectoryExists();
+      const fileUri = baseDirectory + fileName;
 
       await FileSystem.writeAsStringAsync(fileUri, csvContent, {
         encoding: FileSystem.EncodingType.UTF8,
@@ -148,7 +180,9 @@ export class ExportService {
     try {
       const vCardContent = await this.exportToVCard(businessCards);
       const fileName = `MeishiBox_聯絡人_${new Date().toISOString().split('T')[0]}.vcf`;
-      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      const baseDirectory = await this.ensureDirectoryExists();
+      const fileUri = baseDirectory + fileName;
 
       await FileSystem.writeAsStringAsync(fileUri, vCardContent, {
         encoding: FileSystem.EncodingType.UTF8,
@@ -188,7 +222,9 @@ export class ExportService {
 
       const jsonContent = JSON.stringify(cardData, null, 2);
       const fileName = `${card.name || 'unnamed'}_名片數據.json`;
-      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      const baseDirectory = await this.ensureDirectoryExists();
+      const fileUri = baseDirectory + fileName;
 
       await FileSystem.writeAsStringAsync(fileUri, jsonContent, {
         encoding: FileSystem.EncodingType.UTF8,
