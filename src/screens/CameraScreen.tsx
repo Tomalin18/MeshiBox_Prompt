@@ -13,6 +13,7 @@ import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-ca
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { GoogleAIOCRService } from '../services/GoogleAIOCRService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -29,6 +30,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
   const cameraRef = useRef<CameraView>(null);
 
@@ -73,10 +75,37 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     if (!isMounted) return;
     
     if (!result.canceled && result.assets[0]) {
-      navigation.navigate('cardEdit', { 
-        imageUri: result.assets[0].uri,
-        fromGallery: true 
-      });
+      const imageUri = result.assets[0].uri;
+      
+      // 顯示 OCR 處理狀態
+      setIsProcessingOCR(true);
+      
+      try {
+        // 進行 OCR 分析
+        const ocrData = await GoogleAIOCRService.processBusinessCard(imageUri);
+        
+        if (!isMounted) return;
+        
+        // 導航到編輯頁面並帶入 OCR 結果
+        navigation.navigate('cardEdit', { 
+          imageUri: imageUri,
+          ocrData: ocrData,
+          fromGallery: true 
+        });
+      } catch (error) {
+        console.error('OCR processing failed:', error);
+        if (isMounted) {
+          // 即使 OCR 失敗，仍然導航到編輯頁面
+          navigation.navigate('cardEdit', { 
+            imageUri: imageUri,
+            fromGallery: true 
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setIsProcessingOCR(false);
+        }
+      }
     }
   };
 
@@ -98,13 +127,41 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
       if (photo) {
         // 計算裁剪區域
         const cropData = getCropArea();
+        const imageUri = photo.uri;
         
-        navigation.navigate('cardEdit', { 
-          imageUri: photo.uri,
-          fromCamera: true,
-          cropArea: cropData,
-          orientation: orientation,
-        });
+        // 顯示 OCR 處理狀態
+        setIsProcessingOCR(true);
+        
+        try {
+          // 進行 OCR 分析
+          const ocrData = await GoogleAIOCRService.processBusinessCard(imageUri);
+          
+          if (!isMounted) return;
+          
+          // 導航到編輯頁面並帶入 OCR 結果
+          navigation.navigate('cardEdit', { 
+            imageUri: imageUri,
+            ocrData: ocrData,
+            fromCamera: true,
+            cropArea: cropData,
+            orientation: orientation,
+          });
+        } catch (error) {
+          console.error('OCR processing failed:', error);
+          if (isMounted) {
+            // 即使 OCR 失敗，仍然導航到編輯頁面
+            navigation.navigate('cardEdit', { 
+              imageUri: imageUri,
+              fromCamera: true,
+              cropArea: cropData,
+              orientation: orientation,
+            });
+          }
+        } finally {
+          if (isMounted) {
+            setIsProcessingOCR(false);
+          }
+        }
       }
     } catch (error) {
       console.error('Camera capture error:', error);
@@ -199,7 +256,14 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           {/* Guide Content in Black Area */}
           <View style={styles.guideContent}>
             {/* Instruction Text */}
-            <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
+            {isProcessingOCR ? (
+              <View style={styles.processingContainer}>
+                <Text style={styles.processingText}>名片分析中...</Text>
+                <Text style={styles.processingSubText}>請稍候，正在識別名片信息</Text>
+              </View>
+            ) : (
+              <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
+            )}
             
             {/* Orientation Toggle */}
             <View style={styles.orientationToggle}>
@@ -365,6 +429,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 40,
+  },
+  
+  // OCR Processing Styles
+  processingContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  processingText: {
+    color: '#FF6B35',
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  processingSubText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '400',
+    textAlign: 'center',
+    opacity: 0.8,
   },
   
   // Orientation Toggle Styles

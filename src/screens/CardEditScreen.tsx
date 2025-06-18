@@ -34,6 +34,7 @@ interface Props {
 
 const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [cardData, setCardData] = useState<Partial<BusinessCard>>({
     name: '',
     company: '',
@@ -53,13 +54,30 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const imageUri = route?.params?.imageUri || route?.params?.card?.imageUri;
 
   useEffect(() => {
-    if (route?.params?.card) {
-      // Editing existing card
-      setCardData(route.params.card);
-    } else if (route?.params?.ocrData) {
-      // New card from OCR
-      setCardData(route.params.ocrData);
-    }
+    const initializeCardData = async () => {
+      if (route?.params?.card) {
+        // Editing existing card
+        setCardData(route.params.card);
+      } else if (route?.params?.ocrData) {
+        // New card from OCR - data already processed
+        setCardData(route.params.ocrData);
+      } else if (route?.params?.imageUri && !route?.params?.ocrData) {
+        // New card with image but no OCR data - need to process
+        setIsProcessingOCR(true);
+        try {
+          const { GoogleAIOCRService } = await import('../services/GoogleAIOCRService');
+          const ocrData = await GoogleAIOCRService.processBusinessCard(route.params.imageUri);
+          setCardData(ocrData);
+        } catch (error) {
+          console.error('OCR processing failed:', error);
+          // Keep empty data if OCR fails
+        } finally {
+          setIsProcessingOCR(false);
+        }
+      }
+    };
+
+    initializeCardData();
   }, [route?.params]);
 
   const handleBack = () => {
@@ -188,6 +206,12 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
           {imageUri && (
             <View style={styles.imageContainer}>
               <Image source={{ uri: imageUri }} style={styles.cardImage} resizeMode="contain" />
+              {isProcessingOCR && (
+                <View style={styles.ocrOverlay}>
+                  <Text style={styles.ocrText}>正在分析名片...</Text>
+                  <Text style={styles.ocrSubText}>請稍候，AI 正在識別文字信息</Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -333,10 +357,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 20,
+    position: 'relative',
   },
   cardImage: {
     width: '100%',
     height: 200,
+  },
+  ocrOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  ocrText: {
+    color: '#FF6B35',
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  ocrSubText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
+    opacity: 0.9,
   },
   section: {
     marginTop: 24,
