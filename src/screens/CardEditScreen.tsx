@@ -100,13 +100,16 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
       const businessCard: BusinessCard = {
         id: route?.params?.card?.id || Date.now().toString(),
         name: cardData.name.trim(),
+        nameReading: cardData.nameReading?.trim() || '',
         company: cardData.company?.trim() || '',
+        companyReading: cardData.companyReading?.trim() || '',
         department: cardData.department?.trim() || '',
         position: cardData.position?.trim() || '',
         phone: cardData.phone?.trim() || '',
         mobile: cardData.mobile?.trim() || '',
         fax: cardData.fax?.trim() || '',
         email: cardData.email?.trim() || '',
+        subEmail: cardData.subEmail?.trim() || '',
         website: cardData.website?.trim() || '',
         address: cardData.address?.trim() || '',
         postalCode: cardData.postalCode?.trim() || '',
@@ -236,10 +239,10 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
             {/* Form Fields */}
             <View style={styles.formFields}>
               {renderInputField('person-outline', '姓名 (例: 鴨山かほり)', 'name')}
-              {renderInputField('text-outline', '姓名讀音 (日本人填平假名，其他國家填羅馬拼音)', 'nameReading')}
+              {renderInputField('text-outline', '姓名讀音 (統一使用羅馬字，例: Go Masatoshi)', 'nameReading')}
               {renderInputField('briefcase-outline', '役職', 'position')}
               {renderInputField('business-outline', '會社名', 'company')}
-              {renderInputField('text-outline', '會社名讀音 (平假名或羅馬拼音)', 'companyReading')}
+              {renderInputField('text-outline', '會社名讀音 (統一使用羅馬字)', 'companyReading')}
               {renderInputField('folder-outline', '部門', 'department')}
             </View>
           </View>

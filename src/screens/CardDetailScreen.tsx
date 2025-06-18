@@ -40,21 +40,23 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       const updatedCard = { ...card };
       let needsUpdate = false;
 
-      // 如果沒有姓名讀音，嘗試自動生成
-      if (!updatedCard.nameReading && updatedCard.name) {
-        const generatedReading = JapaneseSortUtils.getKanjiReading(updatedCard.name);
+      // 如果沒有姓名讀音（完全沒有或為空字符串），嘗試自動生成
+      if ((!updatedCard.nameReading || updatedCard.nameReading.trim() === '') && updatedCard.name) {
+        const generatedReading = JapaneseSortUtils.getKanjiReadingRomaji(updatedCard.name);
         if (generatedReading) {
           updatedCard.nameReading = generatedReading;
           needsUpdate = true;
+          console.log(`自動生成姓名讀音: ${updatedCard.name} → ${generatedReading}`);
         }
       }
 
-      // 如果沒有公司讀音，嘗試自動生成
-      if (!updatedCard.companyReading && updatedCard.company) {
-        const generatedReading = JapaneseSortUtils.getKanjiReading(updatedCard.company);
+      // 如果沒有公司讀音（完全沒有或為空字符串），嘗試自動生成
+      if ((!updatedCard.companyReading || updatedCard.companyReading.trim() === '') && updatedCard.company) {
+        const generatedReading = JapaneseSortUtils.getKanjiReadingRomaji(updatedCard.company);
         if (generatedReading) {
           updatedCard.companyReading = generatedReading;
           needsUpdate = true;
+          console.log(`自動生成公司讀音: ${updatedCard.company} → ${generatedReading}`);
         }
       }
 
