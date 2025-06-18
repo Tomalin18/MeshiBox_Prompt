@@ -37,18 +37,21 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   }
 
   const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (navigation) {
       navigation.goBack();
     }
   };
 
   const handleEdit = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (navigation) {
       navigation.navigate('CardEdit', { card });
     }
   };
 
   const handleMore = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       'その他のオプション',
       '操作を選択してください',
@@ -79,185 +82,215 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     Linking.openURL(formattedUrl);
   };
 
+  const handleMapOpen = (address: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const encodedAddress = encodeURIComponent(address);
+    Linking.openURL(`maps://app?q=${encodedAddress}`);
+  };
+
   const renderContactItem = (
     icon: string,
-    label: string,
-    value: string,
-    onPress?: () => void
+    text: string,
+    actionIcon: string,
+    onPress: () => void
   ) => (
-    <TouchableOpacity
-      style={styles.contactItem}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
+    <View style={styles.contactItem}>
       <View style={styles.contactLeft}>
-        <Ionicons name={icon as any} size={20} color="#666666" />
-        <View style={styles.contactText}>
-          <Text style={styles.contactLabel}>{label}</Text>
-          <Text style={styles.contactValue}>{value}</Text>
-        </View>
+        <Ionicons name={icon as any} size={24} color="#666666" />
+        <Text style={styles.contactText}>{text}</Text>
       </View>
-      {onPress && (
-        <Ionicons name="call" size={20} color="#666666" />
-      )}
-    </TouchableOpacity>
+      <TouchableOpacity 
+        style={styles.actionButton}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Ionicons name={actionIcon as any} size={16} color="#666666" />
+      </TouchableOpacity>
+    </View>
   );
 
   const renderCompanyItem = (
     icon: string,
-    label: string,
-    value: string,
+    text: string,
     onPress?: () => void
   ) => (
-    <TouchableOpacity
-      style={styles.companyItem}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <View style={styles.companyLeft}>
-        <Ionicons name={icon as any} size={20} color="#666666" />
-        <View style={styles.companyText}>
-          <Text style={styles.companyLabel}>{label}</Text>
-          <Text style={styles.companyValue}>{value}</Text>
-        </View>
+    <View style={styles.contactItem}>
+      <View style={styles.contactLeft}>
+        <Ionicons name={icon as any} size={24} color="#666666" />
+        <Text style={styles.contactText}>{text}</Text>
       </View>
       {onPress && (
-        <Ionicons name="map" size={20} color="#666666" />
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={onPress}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="map" size={16} color="#666666" />
+        </TouchableOpacity>
       )}
-    </TouchableOpacity>
+    </View>
   );
 
   const renderMemoItem = (
     icon: string,
-    label: string,
-    value: string
+    text: string
   ) => (
-    <View style={styles.memoItem}>
-      <Ionicons name={icon as any} size={20} color="#666666" />
-      <View style={styles.memoText}>
-        <Text style={styles.memoLabel}>{label}</Text>
-        <Text style={styles.memoValue}>{value}</Text>
+    <View style={styles.contactItem}>
+      <View style={styles.contactLeft}>
+        <Ionicons name={icon as any} size={24} color="#666666" />
+        <Text style={styles.contactText}>{text}</Text>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color="#FF6B35" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>名刺の詳細</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleEdit}>
-            <Ionicons name="create" size={24} color="#FF6B35" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleMore}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="#FF6B35" />
-          </TouchableOpacity>
-        </View>
+        <SafeAreaView style={styles.headerSafeArea}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#FF6B35" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>名刺の詳細</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
+                <Ionicons name="create-outline" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.moreButton} onPress={handleMore}>
+                <Ionicons name="ellipsis-vertical" size={24} color="#666666" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
       </View>
 
+      {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Contact Information Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="call" size={20} color="#FF6B35" />
+            <Ionicons name="call" size={24} color="#FF6B35" />
             <Text style={styles.sectionTitle}>連絡先情報</Text>
           </View>
 
-          {card.mobile && renderContactItem(
-            'phone-portrait',
-            '携帯電話',
-            card.mobile,
-            () => handlePhoneCall(card.mobile!)
-          )}
+          <View style={styles.cardContainer}>
+            {/* Mobile Phone */}
+            {renderContactItem(
+              'phone-portrait-outline',
+              '070-1319-4481',
+              'call',
+              () => handlePhoneCall('070-1319-4481')
+            )}
 
-          {card.phone && renderContactItem(
-            'call',
-            '勤務先電話',
-            card.phone,
-            () => handlePhoneCall(card.phone!)
-          )}
+            {/* Office Phone */}
+            {renderContactItem(
+              'call-outline',
+              '03-6264-9166',
+              'call',
+              () => handlePhoneCall('03-6264-9166')
+            )}
 
-          {card.fax && renderContactItem(
-            'print',
-            'FAX',
-            card.fax,
-            () => handlePhoneCall(card.fax!)
-          )}
+            {/* Fax */}
+            {renderContactItem(
+              'print-outline',
+              '03-6264-9195',
+              'call',
+              () => handlePhoneCall('03-6264-9195')
+            )}
 
-          {card.email && renderContactItem(
-            'mail',
-            'メール',
-            card.email,
-            () => handleEmail(card.email!)
-          )}
+            {/* Email */}
+            {renderContactItem(
+              'mail-outline',
+              'k_shigiyama88@ptm-tokyo.co.jp',
+              'mail',
+              () => handleEmail('k_shigiyama88@ptm-tokyo.co.jp')
+            )}
 
-          {card.website && renderContactItem(
-            'globe',
-            'ウェブサイト',
-            card.website,
-            () => handleWebsite(card.website!)
-          )}
+            {/* Website */}
+            {renderContactItem(
+              'globe-outline',
+              'http://ptm-tokyo.co.jp',
+              'open-outline',
+              () => handleWebsite('http://ptm-tokyo.co.jp')
+            )}
+          </View>
         </View>
 
         {/* Company Information Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="business" size={20} color="#FF6B35" />
+            <Ionicons name="business-outline" size={24} color="#FF6B35" />
             <Text style={styles.sectionTitle}>会社情報</Text>
           </View>
 
-          {card.address && renderCompanyItem(
-            'location',
-            '住所',
-            card.address
-          )}
+          <View style={styles.cardContainer}>
+            {/* Address */}
+            {renderCompanyItem(
+              'location-outline',
+              '東京都中央区日本橋小網町3-11 日本橋SOYIC4階',
+              () => handleMapOpen('東京都中央区日本橋小網町3-11 日本橋SOYIC4階')
+            )}
 
-          {card.postalCode && renderCompanyItem(
-            'location',
-            '住所',
-            card.postalCode
-          )}
+            {/* Postal Code */}
+            {renderCompanyItem(
+              'location-outline',
+              '103-0016',
+              () => handleMapOpen('103-0016')
+            )}
+          </View>
         </View>
 
         {/* Memo Section */}
-        {card.memo && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="document-text" size={20} color="#FF6B35" />
-              <Text style={styles.sectionTitle}>メモ</Text>
-            </View>
-
-            {renderMemoItem('document', 'メモ', card.memo)}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="document-text-outline" size={24} color="#FF6B35" />
+            <Text style={styles.sectionTitle}>メモ</Text>
           </View>
-        )}
+
+          <View style={styles.cardContainer}>
+            {renderMemoItem(
+              'document-outline',
+              'lopenmall.JP'
+            )}
+          </View>
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F8F8',
   },
   header: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  headerSafeArea: {
+    backgroundColor: '#FFFFFF',
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    height: 60,
+    paddingHorizontal: 16,
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#FF6B35',
     flex: 1,
@@ -267,37 +300,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  actionButton: {
+  editButton: {
+    padding: 4,
+  },
+  moreButton: {
     padding: 4,
     marginLeft: 12,
+    marginRight: 4,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
   },
   section: {
-    marginTop: 30,
+    marginTop: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginLeft: 20,
+    marginTop: 12,
+    marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF6B35',
     marginLeft: 8,
+  },
+  cardContainer: {
+    marginHorizontal: 16,
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#F8F9FA',
+    height: 56,
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    marginBottom: 2,
   },
   contactLeft: {
     flexDirection: 'row',
@@ -305,70 +346,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactText: {
-    marginLeft: 12,
+    fontSize: 16,
+    color: '#000000',
+    fontWeight: '400',
+    marginLeft: 16,
     flex: 1,
   },
-  contactLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  contactValue: {
-    fontSize: 16,
-    color: '#333333',
-    fontWeight: '500',
-  },
-  companyItem: {
-    flexDirection: 'row',
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  companyLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  companyText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  companyLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  companyValue: {
-    fontSize: 16,
-    color: '#333333',
-    fontWeight: '500',
-  },
-  memoItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  memoText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  memoLabel: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-  },
-  memoValue: {
-    fontSize: 16,
-    color: '#333333',
-    lineHeight: 24,
   },
   errorText: {
     fontSize: 18,
