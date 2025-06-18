@@ -62,6 +62,3 @@ MeshiBox_Prompt 是一個以 TypeScript 實作的專案，旨在（請補充專�
 
 如需查看更多內容，請參考專案的 [GitHub 頁面](https://github.com/Tomalin18/MeshiBox_Prompt/tree/main/)。
 如有專案簡介、用途、授權等細節，歡迎補充！
-```
-
-你可以直接套用這份內容，並根據你的專案實際情況進行補充說明。
