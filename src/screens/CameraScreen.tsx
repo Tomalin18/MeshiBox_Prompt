@@ -29,19 +29,32 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isMounted, setIsMounted] = useState(true);
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
     StatusBar.setBackgroundColor('#000000', true);
+    setIsMounted(true);
+    
+    return () => {
+      setIsMounted(false);
+      setIsCapturing(false);
+      // 清理相機資源
+      if (cameraRef.current) {
+        console.log('Cleaning up camera resources');
+      }
+    };
   }, []);
 
   const handleClose = () => {
+    if (!isMounted) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.goBack();
   };
 
   const handleGalleryPress = async () => {
+    if (!isMounted) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -57,6 +70,8 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
       quality: 1,
     });
 
+    if (!isMounted) return;
+    
     if (!result.canceled && result.assets[0]) {
       navigation.navigate('cardEdit', { 
         imageUri: result.assets[0].uri,
@@ -66,7 +81,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleCapture = async () => {
-    if (!cameraRef.current || isCapturing) return;
+    if (!cameraRef.current || isCapturing || !isMounted) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsCapturing(true);
@@ -77,6 +92,8 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
         base64: false,
         skipProcessing: false,
       });
+
+      if (!isMounted) return;
 
       if (photo) {
         // 計算裁剪區域
@@ -91,9 +108,13 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Camera capture error:', error);
-      Alert.alert('エラー', '写真の撮影に失敗しました');
+      if (isMounted) {
+        Alert.alert('エラー', '写真の撮影に失敗しました');
+      }
     } finally {
-      setIsCapturing(false);
+      if (isMounted) {
+        setIsCapturing(false);
+      }
     }
   };
 
@@ -118,14 +139,14 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     };
   };
 
-
-
   const handleFlashToggle = () => {
+    if (!isMounted) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFlashMode(flashMode === 'off' ? 'on' : 'off');
   };
 
   const handleOrientationChange = (newOrientation: 'landscape' | 'portrait') => {
+    if (!isMounted) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setOrientation(newOrientation);
   };
@@ -156,89 +177,86 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
         style={styles.camera}
         facing={cameraType}
         flash={flashMode}
-      >
-        {/* Top Bar */}
-        <SafeAreaView style={styles.topSafeArea}>
-          <View style={styles.topBar}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleClose}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Loading Bar Style Line */}
-          <View style={styles.topLine} />
-        </SafeAreaView>
+      />
 
-        {/* Guide Frame Section with Overlay */}
-        <View style={styles.guideSection}>
-          <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
-          
-          {/* Overlay Container using Flexbox */}
-          <View style={styles.overlayContainer}>
-            {/* Top Spacer */}
-            <View style={styles.topSpacer} />
-            
-            {/* Middle Row */}
-            <View style={styles.middleRow}>
-              {/* Left Overlay */}
-              <View style={styles.sideOverlay} />
-              
-              {/* Card Frame */}
-              <View style={[
-                styles.cardFrame,
-                orientation === 'landscape' ? styles.landscapeFrame : styles.portraitFrame
-              ]} />
-              
-              {/* Right Overlay */}
-              <View style={styles.sideOverlay} />
+      {/* Full Screen Overlay Container - 修復：移到 CameraView 外部 */}
+      <View style={styles.overlayContainer} pointerEvents="box-none">
+        {/* Top Spacer with Controls */}
+        <View style={styles.topSpacer}>
+          <SafeAreaView style={styles.topSafeArea}>
+            <View style={styles.topBar}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleClose}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={28} color="#FFFFFF" />
+              </TouchableOpacity>
             </View>
             
-            {/* Bottom Spacer */}
-            <View style={styles.bottomSpacer} />
+            {/* Loading Bar Style Line */}
+            <View style={styles.topLine} />
+          </SafeAreaView>
+        </View>
+        
+        {/* Middle Row */}
+        <View style={styles.middleRow}>
+          {/* Left Overlay */}
+          <View style={styles.sideOverlay} />
+          
+          {/* Center Content Area */}
+          <View style={styles.centerContent}>
+            {/* Instruction Text */}
+            <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
+            
+            {/* Card Frame */}
+            <View style={[
+              styles.cardFrame,
+              orientation === 'landscape' ? styles.landscapeFrame : styles.portraitFrame
+            ]} />
+            
+            {/* Orientation Toggle */}
+            <View style={styles.orientationToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.orientationButton,
+                  orientation === 'landscape' && styles.orientationButtonSelected
+                ]}
+                onPress={() => handleOrientationChange('landscape')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.orientationButtonText,
+                  orientation === 'landscape' && styles.orientationButtonTextSelected
+                ]}>
+                  横向き
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.orientationButton,
+                  orientation === 'portrait' && styles.orientationButtonSelected
+                ]}
+                onPress={() => handleOrientationChange('portrait')}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  styles.orientationButtonText,
+                  orientation === 'portrait' && styles.orientationButtonTextSelected
+                ]}>
+                  縦向き
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
           
-          {/* Orientation Toggle */}
-          <View style={styles.orientationToggle}>
-            <TouchableOpacity
-              style={[
-                styles.orientationButton,
-                orientation === 'landscape' && styles.orientationButtonSelected
-              ]}
-              onPress={() => handleOrientationChange('landscape')}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.orientationButtonText,
-                orientation === 'landscape' && styles.orientationButtonTextSelected
-              ]}>
-                横向き
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.orientationButton,
-                orientation === 'portrait' && styles.orientationButtonSelected
-              ]}
-              onPress={() => handleOrientationChange('portrait')}
-              activeOpacity={0.7}
-            >
-              <Text style={[
-                styles.orientationButtonText,
-                orientation === 'portrait' && styles.orientationButtonTextSelected
-              ]}>
-                縦向き
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {/* Right Overlay */}
+          <View style={styles.sideOverlay} />
         </View>
-
-        {/* Bottom Controls */}
-        <View style={styles.bottomControls}>
+        
+        {/* Bottom Spacer with Controls */}
+        <View style={styles.bottomSpacer}>
           <SafeAreaView style={styles.bottomSafeArea}>
             <View style={styles.controlsContainer}>
               {/* Gallery Button */}
@@ -266,18 +284,18 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
                 onPress={handleFlashToggle}
                 activeOpacity={0.7}
               >
-                                 <Ionicons
-                   name={flashMode === 'off' ? "flash-off" : "flash"}
-                   size={32}
-                   color="#FFFFFF"
-                 />
+                <Ionicons
+                  name={flashMode === 'off' ? "flash-off" : "flash"}
+                  size={32}
+                  color="#FFFFFF"
+                />
               </TouchableOpacity>
             </View>
-                     </SafeAreaView>
-         </View>
-       </CameraView>
-     </View>
-   );
+          </SafeAreaView>
+        </View>
+      </View>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -289,7 +307,25 @@ const styles = StyleSheet.create({
   // Camera Styles
   camera: {
     flex: 1,
-    justifyContent: 'space-between',
+    width: '100%',
+    height: '100%',
+  },
+  
+  // 修復：Full Screen Overlay Container
+  overlayContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flex: 1,
+  },
+  
+  // Top Spacer with Controls
+  topSpacer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-start',
   },
   
   // Top Bar Styles
@@ -315,47 +351,33 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   
-  // Guide Section Styles
-  guideSection: {
-    flex: 1,
+  // Middle Row
+  middleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 60, // 120px from safe area top minus top bar
+    justifyContent: 'center',
   },
+  
+  // Side Overlays
+  sideOverlay: {
+    flex: 1,
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  
+  // Center Content Area
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  // Instruction Text
   instructionText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 40,
-  },
-  
-  // Overlay Styles - Using Flexbox for responsive layout
-  overlayContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flex: 1,
-  },
-  topSpacer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  },
-  bottomSpacer: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  },
-  middleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sideOverlay: {
-    flex: 1,
-    height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   
   // Card Frame Styles
@@ -400,10 +422,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   
-  // Bottom Controls Styles
-  bottomControls: {
-    backgroundColor: 'transparent',
+  // Bottom Spacer with Controls
+  bottomSpacer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
   },
+  
+  // Bottom Controls Styles
   bottomSafeArea: {
     backgroundColor: 'transparent',
   },
