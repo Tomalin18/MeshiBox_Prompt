@@ -9,10 +9,12 @@ import {
   Linking,
   Alert,
   Image,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { BusinessCard } from '../types';
+import { StorageService } from '../services/StorageService';
 
 interface Props {
   navigation?: {
@@ -51,14 +53,121 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      
+      // 構建分享內容
+      let shareContent = `📇 ${card.name}\n`;
+      
+      if (card.nameReading) {
+        shareContent += `(${card.nameReading})\n`;
+      }
+      
+      shareContent += `🏢 ${card.company}\n`;
+      
+      if (card.companyReading) {
+        shareContent += `(${card.companyReading})\n`;
+      }
+      
+      if (card.department) {
+        shareContent += `📋 ${card.department}\n`;
+      }
+      
+      if (card.position) {
+        shareContent += `💼 ${card.position}\n`;
+      }
+      
+      if (card.phone) {
+        shareContent += `📞 ${card.phone}\n`;
+      }
+      
+      if (card.mobile) {
+        shareContent += `📱 ${card.mobile}\n`;
+      }
+      
+      if (card.email) {
+        shareContent += `📧 ${card.email}\n`;
+      }
+      
+      if (card.website) {
+        shareContent += `🌐 ${card.website}\n`;
+      }
+      
+      if (card.address) {
+        shareContent += `📍 ${card.address}\n`;
+      }
+      
+      if (card.memo) {
+        shareContent += `📝 ${card.memo}\n`;
+      }
+      
+      const result = await Share.share({
+        message: shareContent,
+        title: `${card.name}の名刺`,
+      });
+      
+      if (result.action === Share.sharedAction) {
+        console.log('名刺が共有されました');
+      }
+    } catch (error) {
+      console.error('共有エラー:', error);
+      Alert.alert('エラー', '名刺の共有に失敗しました');
+    }
+  };
+
+  const handleDelete = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    Alert.alert(
+      '名刺を削除',
+      `「${card.name}」の名刺を削除しますか？この操作は取り消せません。`,
+      [
+        {
+          text: 'キャンセル',
+          style: 'cancel',
+        },
+        {
+          text: '削除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await StorageService.deleteBusinessCard(card.id);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              
+              Alert.alert(
+                '削除完了',
+                '名刺が削除されました',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      if (navigation) {
+                        navigation.goBack();
+                      }
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              console.error('削除エラー:', error);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              Alert.alert('エラー', '名刺の削除に失敗しました');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleMore = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       'その他のオプション',
       '操作を選択してください',
       [
-        { text: '共有', onPress: () => console.log('Share') },
-        { text: '削除', style: 'destructive', onPress: () => console.log('Delete') },
+        { text: '共有', onPress: handleShare },
+        { text: '削除', style: 'destructive', onPress: handleDelete },
         { text: 'キャンセル', style: 'cancel' },
       ]
     );
