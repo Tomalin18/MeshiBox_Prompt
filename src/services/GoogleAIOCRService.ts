@@ -70,39 +70,26 @@ export class GoogleAIOCRService {
           {
             parts: [
               {
-                text: `請分析這張名片圖片，提取以下信息並以 JSON 格式返回：
-                
-                要提取的欄位：
-                - name: 姓名（日文或中文或英文）
-                - company: 公司名稱
-                - department: 部門
-                - position: 職位
-                - phone: 電話號碼（固定電話）
-                - mobile: 手機號碼
-                - fax: 傳真號碼
-                - email: 電子郵件
-                - website: 網站地址
-                - address: 地址
-                - postalCode: 郵遞區號
-                - memo: 其他備註信息
-                
-                請只返回 JSON 格式的結果，不要包含其他文字。如果某個欄位沒有找到對應信息，請設為空字符串。
-                
-                範例格式：
-                {
-                  "name": "鴨山かほり",
-                  "company": "統一企業集團",
-                  "department": "輸入國內事業部",
-                  "position": "マネージャー",
-                  "phone": "03-6264-9166",
-                  "mobile": "070-1319-4481",
-                  "fax": "03-6264-9195",
-                  "email": "k_shigiyama88@ptm-tokyo.co.jp",
-                  "website": "http://ptm-tokyo.co.jp",
-                  "address": "東京都中央区日本橋小網町3-11 日本橋SOYIC4階",
-                  "postalCode": "103-0016",
-                  "memo": "lopenmall.JP"
-                }`
+                text: `分析這張名片圖片，提取信息並返回純 JSON 格式，不要包含任何 markdown 標記、代碼塊標記或其他文字。
+
+要提取的欄位：
+- name: 姓名
+- company: 公司名稱  
+- department: 部門
+- position: 職位
+- phone: 固定電話
+- mobile: 手機號碼
+- fax: 傳真號碼
+- email: 電子郵件
+- website: 網站地址
+- address: 完整地址
+- postalCode: 郵遞區號
+- memo: 其他信息
+
+重要：請直接返回 JSON 對象，不要使用 \`\`\`json 標記，不要添加任何解釋文字。如果某欄位沒有信息請設為空字符串。
+
+直接返回格式如下：
+{"name":"","company":"","department":"","position":"","phone":"","mobile":"","fax":"","email":"","website":"","address":"","postalCode":"","memo":""}`
               },
               {
                 inline_data: {
@@ -144,10 +131,29 @@ export class GoogleAIOCRService {
 
       const textContent = result.candidates[0].content.parts[0].text;
       
-      // 解析 JSON 結果
+      // 清理和解析 JSON 結果
       try {
-        const ocrResult = JSON.parse(textContent);
-        return ocrResult as GoogleAIOCRResult;
+        // 清理響應文本，移除可能的 markdown 標記和額外字符
+        let cleanedText = textContent.trim();
+        
+        // 移除可能的 markdown 代碼塊標記
+        cleanedText = cleanedText.replace(/```json\s*/g, '');
+        cleanedText = cleanedText.replace(/```\s*$/g, '');
+        
+        // 移除可能的反引號
+        cleanedText = cleanedText.replace(/^`+|`+$/g, '');
+        
+        // 尋找 JSON 對象的開始和結束
+        const jsonStart = cleanedText.indexOf('{');
+        const jsonEnd = cleanedText.lastIndexOf('}');
+        
+        if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+          const jsonString = cleanedText.substring(jsonStart, jsonEnd + 1);
+          const ocrResult = JSON.parse(jsonString);
+          return ocrResult as GoogleAIOCRResult;
+        } else {
+          throw new Error('No valid JSON found in response');
+        }
       } catch (parseError) {
         console.error('Failed to parse OCR result:', parseError);
         console.log('Raw response:', textContent);
@@ -166,34 +172,58 @@ export class GoogleAIOCRService {
   static fallbackTextParsing(text: string): GoogleAIOCRResult {
     const result: GoogleAIOCRResult = {};
     
-    // 簡單的正則表達式匹配
+    console.log('Fallback parsing raw text:', text);
+    
+    // 更智能的正則表達式匹配
     const patterns = {
-      email: /[\w\.-]+@[\w\.-]+\.\w+/g,
-      phone: /(\d{2,4}-\d{4}-\d{4}|\d{3}-\d{3}-\d{4})/g,
-      mobile: /(070|080|090)-\d{4}-\d{4}/g,
-      website: /(https?:\/\/[\w\.-]+|www\.[\w\.-]+|[\w\.-]+\.com|[\w\.-]+\.co\.jp)/g,
-      postalCode: /〒?\s*(\d{3}-\d{4})/g,
+      email: /[\w\.-]+@[\w\.-]+\.\w+/gi,
+      phone: /(?:TEL|電話|Tel|Phone)[:\s]*(\d{2,4}[-\s]\d{4}[-\s]\d{4})/gi,
+      mobile: /(?:Mobile|携帯|手機)[:\s]*((?:070|080|090)[-\s]\d{4}[-\s]\d{4})/gi,
+      fax: /(?:FAX|传真|ファックス)[:\s]*(\d{2,4}[-\s]\d{4}[-\s]\d{4})/gi,
+      website: /(https?:\/\/[\w\.-]+|www\.[\w\.-]+|[\w\.-]+\.(?:com|co\.jp|org|net))/gi,
+      postalCode: /(?:〒|郵便番号|Postal)[:\s]*(\d{3}[-\s]\d{4})/gi,
     };
 
-    // 提取郵件
-    const emailMatch = text.match(patterns.email);
-    if (emailMatch) result.email = emailMatch[0];
+    // 嘗試提取結構化信息
+    try {
+      // 提取郵件
+      const emailMatch = text.match(patterns.email);
+      if (emailMatch) result.email = emailMatch[0];
 
-    // 提取電話
-    const phoneMatch = text.match(patterns.phone);
-    if (phoneMatch) result.phone = phoneMatch[0];
+      // 提取電話
+      const phoneMatch = text.match(patterns.phone);
+      if (phoneMatch) result.phone = phoneMatch[1] || phoneMatch[0];
 
-    // 提取手機
-    const mobileMatch = text.match(patterns.mobile);
-    if (mobileMatch) result.mobile = mobileMatch[0];
+      // 提取手機
+      const mobileMatch = text.match(patterns.mobile);
+      if (mobileMatch) result.mobile = mobileMatch[1] || mobileMatch[0];
 
-    // 提取網站
-    const websiteMatch = text.match(patterns.website);
-    if (websiteMatch) result.website = websiteMatch[0];
+      // 提取傳真
+      const faxMatch = text.match(patterns.fax);
+      if (faxMatch) result.fax = faxMatch[1] || faxMatch[0];
 
-    // 提取郵遞區號
-    const postalMatch = text.match(patterns.postalCode);
-    if (postalMatch) result.postalCode = postalMatch[1];
+      // 提取網站
+      const websiteMatch = text.match(patterns.website);
+      if (websiteMatch) result.website = websiteMatch[0];
+
+      // 提取郵遞區號
+      const postalMatch = text.match(patterns.postalCode);
+      if (postalMatch) result.postalCode = postalMatch[1] || postalMatch[0];
+
+      // 嘗試從文本中提取姓名（通常在開頭）
+      const lines = text.split('\n').filter(line => line.trim());
+      if (lines.length > 0) {
+        // 假設第一行可能是姓名
+        const firstLine = lines[0].trim();
+        if (firstLine && firstLine.length < 20 && !patterns.email.test(firstLine)) {
+          result.name = firstLine;
+        }
+      }
+
+      console.log('Fallback parsing result:', result);
+    } catch (error) {
+      console.error('Fallback parsing error:', error);
+    }
 
     return result;
   }
