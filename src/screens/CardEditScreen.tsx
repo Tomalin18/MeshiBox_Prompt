@@ -63,6 +63,7 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
   }, [route?.params]);
 
   const handleBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (navigation) {
       navigation.goBack();
     }
@@ -119,173 +120,235 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
     setCardData(prev => ({ ...prev, [field]: value }));
   };
 
+  const clearField = (field: keyof BusinessCard) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    updateField(field, '');
+  };
+
   const renderInputField = (
     icon: string,
     placeholder: string,
     field: keyof BusinessCard,
     keyboardType: 'default' | 'email-address' | 'phone-pad' | 'url' = 'default'
-  ) => (
-    <View style={styles.inputContainer}>
-      <View style={styles.inputRow}>
-        <Ionicons name={icon as any} size={20} color="#666666" style={styles.inputIcon} />
-        <TextInput
-          style={styles.textInput}
-          placeholder={placeholder}
-          placeholderTextColor="#999999"
-          value={cardData[field] as string || ''}
-          onChangeText={(text) => updateField(field, text)}
-          keyboardType={keyboardType}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <TouchableOpacity style={styles.clearButton} onPress={() => updateField(field, '')}>
-          <Ionicons name="close-circle" size={20} color="#CCCCCC" />
-        </TouchableOpacity>
+  ) => {
+    const value = cardData[field] as string || '';
+    const hasContent = value.length > 0;
+    
+    return (
+      <View style={styles.inputContainer}>
+        <View style={styles.inputRow}>
+          <Ionicons name={icon as any} size={24} color="#666666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.textInput}
+            placeholder={placeholder}
+            placeholderTextColor="#999999"
+            value={value}
+            onChangeText={(text) => updateField(field, text)}
+            keyboardType={keyboardType}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {hasContent && (
+            <TouchableOpacity 
+              style={styles.clearButton} 
+              onPress={() => clearField(field)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={20} color="#666666" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
-  );
-
-  const renderSection = (title: string, icon: string, children: React.ReactNode) => (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <Ionicons name={icon as any} size={20} color="#FF6B35" />
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <TouchableOpacity style={styles.addButton}>
-          <Ionicons name="add" size={20} color="#FF6B35" />
-        </TouchableOpacity>
-      </View>
-      {children}
-    </View>
-  );
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <SafeAreaView style={styles.headerSafeArea}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color="#FF6B35" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>名刺を編集</Text>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <Text style={styles.saveButtonText}>保存</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </View>
+
       <KeyboardAvoidingView
-        style={styles.container}
+        style={styles.content}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color="#FF6B35" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>名刺を編集</Text>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>保存</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Business Card Image */}
           {imageUri && (
             <View style={styles.imageContainer}>
-              <Image source={{ uri: imageUri }} style={styles.cardImage} />
+              <Image source={{ uri: imageUri }} style={styles.cardImage} resizeMode="contain" />
             </View>
           )}
 
           {/* Basic Information Section */}
-          {renderSection('基本情報', 'person', (
-            <>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="person-outline" size={24} color="#FF6B35" />
+              <Text style={styles.sectionTitle}>基本情報</Text>
+              <TouchableOpacity style={styles.addButton}>
+                <Ionicons name="add" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Language Selector */}
+            <View style={styles.languageSelector}>
               <Text style={styles.languageTab}>日本語</Text>
-              <View style={styles.languageUnderline} />
-              
-              {renderInputField('person', '鴨山かほり', 'name')}
-              {renderInputField('briefcase', '役職', 'position')}
-              {renderInputField('business', '統一企業集團', 'company')}
-              {renderInputField('briefcase', '輸入国内事業部', 'department')}
-            </>
-          ))}
+              <TouchableOpacity style={styles.languageAddButton}>
+                <Ionicons name="add" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Form Fields */}
+            <View style={styles.formFields}>
+              {renderInputField('person-outline', '鴨山かほり', 'name')}
+              {renderInputField('briefcase-outline', '役職', 'position')}
+              {renderInputField('business-outline', '統一企業集團', 'company')}
+              {renderInputField('folder-outline', '輸入國內事業部', 'department')}
+            </View>
+          </View>
 
           {/* Contact Information Section */}
-          {renderSection('連絡先情報', 'call', (
-            <>
-              {renderInputField('phone-portrait', '070-1319-4481', 'mobile', 'phone-pad')}
-              {renderInputField('call', '03-6264-9166', 'phone', 'phone-pad')}
-              {renderInputField('print', '03-6264-9195', 'fax', 'phone-pad')}
-              {renderInputField('mail', 'k_shigiyama88@ptm-tokyo.co.jp', 'email', 'email-address')}
-              {renderInputField('mail', 'サブメール', 'email', 'email-address')}
-              {renderInputField('link', 'http://ptm-tokyo.co.jp', 'website', 'url')}
-            </>
-          ))}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="call-outline" size={24} color="#FF6B35" />
+              <Text style={styles.sectionTitle}>連絡先情報</Text>
+              <TouchableOpacity style={styles.addButton}>
+                <Ionicons name="add" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.formFields}>
+              {renderInputField('phone-portrait-outline', '070-1319-4481', 'mobile', 'phone-pad')}
+              {renderInputField('call-outline', '03-6264-9166', 'phone', 'phone-pad')}
+              {renderInputField('print-outline', '03-6264-9195', 'fax', 'phone-pad')}
+              {renderInputField('mail-outline', 'k_shigiyama88@ptm-tokyo.co.jp', 'email', 'email-address')}
+              {renderInputField('mail-outline', 'サブメール', 'email', 'email-address')}
+              {renderInputField('link-outline', 'http://ptm-tokyo.co.jp', 'website', 'url')}
+            </View>
+          </View>
 
           {/* Company Information Section */}
-          {renderSection('会社情報', 'business', (
-            <>
-              {renderInputField('location', '103-0016', 'postalCode')}
-              {renderInputField('location', '東京都中央区日本橋小網町 3-11 日本橋...', 'address')}
-              {renderInputField('grid', '会社ID', 'memo')}
-            </>
-          ))}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="business-outline" size={24} color="#FF6B35" />
+              <Text style={styles.sectionTitle}>会社情報</Text>
+              <TouchableOpacity style={styles.addButton}>
+                <Ionicons name="add" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.formFields}>
+              {renderInputField('location-outline', '103-0016', 'postalCode')}
+              {renderInputField('location-outline', '東京都中央区日本橋小網町 3-11 日本橋...', 'address')}
+              {renderInputField('grid-outline', '会社ID', 'memo')}
+            </View>
+          </View>
 
           {/* Social Media Section */}
-          {renderSection('ソーシャルメディア', 'logo-instagram', (
-            <>
-              {renderInputField('chatbubble', 'LINE アカウント', 'memo')}
-            </>
-          ))}
-        </ScrollView>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="logo-instagram" size={24} color="#FF6B35" />
+              <Text style={styles.sectionTitle}>ソーシャルメディア</Text>
+              <TouchableOpacity style={styles.addButton}>
+                <Ionicons name="add" size={24} color="#FF6B35" />
+              </TouchableOpacity>
+            </View>
 
-        <LoadingOverlay visible={isLoading} />
+            <View style={styles.formFields}>
+              {renderInputField('chatbubble-outline', 'LINE アカウント', 'memo')}
+            </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+
+      <LoadingOverlay visible={isLoading} />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8F8F8',
   },
   header: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  headerSafeArea: {
+    backgroundColor: '#FFFFFF',
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    height: 60,
+    paddingHorizontal: 16,
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#FF6B35',
+    flex: 1,
+    textAlign: 'center',
   },
   saveButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#FF6B35',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+  },
+  scrollContent: {
+    flex: 1,
   },
   imageContainer: {
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 20,
   },
   cardImage: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
-    backgroundColor: '#F0F0F0',
   },
   section: {
-    marginBottom: 30,
+    marginTop: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginLeft: 20,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF6B35',
     marginLeft: 8,
@@ -293,34 +356,42 @@ const styles = StyleSheet.create({
   },
   addButton: {
     padding: 4,
+    marginRight: 20,
+  },
+  languageSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 8,
   },
   languageTab: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
     color: '#FF6B35',
-    marginBottom: 8,
+    borderBottomWidth: 2,
+    borderBottomColor: '#FF6B35',
+    paddingBottom: 4,
   },
-  languageUnderline: {
-    height: 2,
-    backgroundColor: '#FF6B35',
-    width: 60,
-    marginBottom: 16,
+  languageAddButton: {
+    padding: 4,
+  },
+  formFields: {
+    marginHorizontal: 16,
   },
   inputContainer: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    height: 56,
+    paddingHorizontal: 16,
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: 16,
   },
   textInput: {
     flex: 1,
