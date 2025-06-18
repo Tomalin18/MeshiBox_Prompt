@@ -1,5 +1,3 @@
-你可以直接將我提供的 README 範本內容複製貼上到你的 `README.md`，並根據你的實際需求進行補充或調整。以下是你可以直接使用的 Markdown 內容：
-
 ```markdown
 # MeshiBox_Prompt
 
