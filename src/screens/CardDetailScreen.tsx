@@ -289,11 +289,11 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.cardInfoContainer}>
             <Text style={styles.cardName}>{card.name}</Text>
             {card.nameReading && (
-              <Text style={styles.cardNameReading}>{card.nameReading}</Text>
+              <Text style={styles.cardNameReading}>({card.nameReading})</Text>
             )}
             <Text style={styles.cardCompany}>{card.company}</Text>
             {card.companyReading && (
-              <Text style={styles.cardCompanyReading}>{card.companyReading}</Text>
+              <Text style={styles.cardCompanyReading}>({card.companyReading})</Text>
             )}
             {card.department && (
               <Text style={styles.cardDepartment}>{card.department}</Text>
@@ -544,15 +544,22 @@ const styles = StyleSheet.create({
   },
   cardNameReading: {
     fontSize: 16,
-    color: '#666666',
+    color: '#FF6B35',
+    fontWeight: '400',
+    fontStyle: 'italic',
+    marginTop: 2,
+    marginBottom: 8,
   },
   cardCompany: {
     fontSize: 16,
     color: '#666666',
+    marginTop: 4,
   },
   cardCompanyReading: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 14,
+    color: '#999999',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   cardDepartment: {
     fontSize: 16,

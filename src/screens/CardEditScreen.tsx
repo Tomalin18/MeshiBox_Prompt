@@ -235,12 +235,12 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
             {/* Form Fields */}
             <View style={styles.formFields}>
-              {renderInputField('person-outline', '鴨山かほり', 'name')}
-              {renderInputField('text-outline', 'かもやま かほり', 'nameReading')}
+              {renderInputField('person-outline', '姓名 (例: 鴨山かほり)', 'name')}
+              {renderInputField('text-outline', '姓名讀音 (日本人填平假名，其他國家填羅馬拼音)', 'nameReading')}
               {renderInputField('briefcase-outline', '役職', 'position')}
-              {renderInputField('business-outline', '統一企業集團', 'company')}
-              {renderInputField('text-outline', 'とういつきぎょうしゅうだん', 'companyReading')}
-              {renderInputField('folder-outline', '輸入國內事業部', 'department')}
+              {renderInputField('business-outline', '會社名', 'company')}
+              {renderInputField('text-outline', '會社名讀音 (平假名或羅馬拼音)', 'companyReading')}
+              {renderInputField('folder-outline', '部門', 'department')}
             </View>
           </View>
 
