@@ -5,114 +5,129 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  SafeAreaView,
   StatusBar,
+  SafeAreaView,
+  Dimensions,
 } from 'react-native';
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, CameraType, useCameraPermissions, FlashMode } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { OCRService } from '../services/OCRService';
-import LoadingOverlay from '../components/LoadingOverlay';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface Props {
-  navigation?: {
-    goBack: () => void;
+  navigation: {
     navigate: (screen: string, params?: any) => void;
+    goBack: () => void;
   };
 }
 
 const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [permission, requestPermission] = useCameraPermissions();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMounted, setIsMounted] = useState(true);
+  const [cameraType, setCameraType] = useState<CameraType>('back');
+  const [flashMode, setFlashMode] = useState<FlashMode>('off');
+  const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
+  const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
-    return () => {
-      setIsMounted(false);
-    };
+    StatusBar.setBarStyle('light-content');
+    StatusBar.setBackgroundColor('#000000', true);
   }, []);
 
   const handleClose = () => {
-    if (navigation) {
-      navigation.goBack();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.goBack();
+  };
+
+  const handleGalleryPress = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('権限が必要です', 'ギャラリーにアクセスするには権限が必要です');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: orientation === 'landscape' ? [16, 10] : [10, 16],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      navigation.navigate('cardEdit', { 
+        imageUri: result.assets[0].uri,
+        fromGallery: true 
+      });
     }
   };
 
-  const handleTakePicture = async () => {
-    if (!cameraRef.current || isLoading || !isMounted) return;
+  const handleCapture = async () => {
+    if (!cameraRef.current || isCapturing) return;
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsCapturing(true);
 
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setIsLoading(true);
-
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.8,
+        quality: 1,
         base64: false,
+        skipProcessing: false,
       });
 
-      if (!photo || !isMounted) return;
-
-      // Process the image with OCR
-      const ocrResult = await OCRService.processBusinessCard(photo.uri);
-      
-      if (isMounted && navigation) {
-        navigation.navigate('CardEdit', { 
+      if (photo) {
+        // 計算裁剪區域
+        const cropData = getCropArea();
+        
+        navigation.navigate('cardEdit', { 
           imageUri: photo.uri,
-          ocrData: ocrResult 
+          fromCamera: true,
+          cropArea: cropData,
+          orientation: orientation,
         });
       }
     } catch (error) {
-      console.error('Failed to take picture:', error);
-      if (isMounted) {
-        Alert.alert('エラー', '写真の撮影に失敗しました');
-      }
+      console.error('Camera capture error:', error);
+      Alert.alert('エラー', '写真の撮影に失敗しました');
     } finally {
-      if (isMounted) {
-        setIsLoading(false);
-      }
+      setIsCapturing(false);
     }
   };
 
-  const handlePickImage = async () => {
-    try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 10],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0] && isMounted) {
-        setIsLoading(true);
-        
-        const ocrResult = await OCRService.processBusinessCard(result.assets[0].uri);
-        
-        if (isMounted && navigation) {
-          navigation.navigate('CardEdit', { 
-            imageUri: result.assets[0].uri,
-            ocrData: ocrResult 
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Failed to pick image:', error);
-      if (isMounted) {
-        Alert.alert('エラー', '画像の選択に失敗しました');
-      }
-    } finally {
-      if (isMounted) {
-        setIsLoading(false);
-      }
-    }
+  const getCropArea = () => {
+    // 計算導引框在屏幕中的位置和大小
+    const frameWidth = orientation === 'landscape' ? 280 : 180;
+    const frameHeight = orientation === 'landscape' ? 180 : 280;
+    
+    // 計算框架在屏幕中的中心位置
+    const centerX = screenWidth / 2;
+    const centerY = screenHeight / 2;
+    
+    // 計算裁剪區域的左上角座標
+    const cropX = centerX - frameWidth / 2;
+    const cropY = centerY - frameHeight / 2;
+    
+    return {
+      x: cropX,
+      y: cropY,
+      width: frameWidth,
+      height: frameHeight,
+    };
   };
 
-  const handleToggleOrientation = () => {
+
+
+  const handleFlashToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // TODO: Implement orientation toggle
+    setFlashMode(flashMode === 'off' ? 'on' : 'off');
+  };
+
+  const handleOrientationChange = (newOrientation: 'landscape' | 'portrait') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setOrientation(newOrientation);
   };
 
   if (!permission) {
@@ -121,10 +136,11 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
 
   if (!permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" />
         <Text style={styles.permissionText}>カメラの許可が必要です</Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>許可する</Text>
+        <TouchableOpacity style={styles.settingsButton} onPress={requestPermission}>
+          <Text style={styles.settingsButtonText}>許可する</Text>
         </TouchableOpacity>
       </View>
     );
@@ -134,61 +150,134 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
       
-      <LoadingOverlay visible={isLoading} />
-      
-      {/* Close Button */}
-      <SafeAreaView style={styles.topOverlay}>
-        <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-          <Ionicons name="close" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-      </SafeAreaView>
-
-      {/* Camera View */}
+      {/* Camera Preview - Full Screen */}
       <CameraView
         ref={cameraRef}
         style={styles.camera}
-        facing="back"
-      />
+        facing={cameraType}
+        flash={flashMode}
+      >
+        {/* Top Bar */}
+        <SafeAreaView style={styles.topSafeArea}>
+          <View style={styles.topBar}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleClose}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={28} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          
+          {/* Loading Bar Style Line */}
+          <View style={styles.topLine} />
+        </SafeAreaView>
 
-      {/* Instruction Text */}
-      <View style={styles.instructionContainer}>
-        <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
-      </View>
-
-      {/* Capture Frame */}
-      <View style={styles.captureFrame} />
-
-      {/* Bottom Controls */}
-      <View style={styles.bottomOverlay}>
-        <View style={styles.controlsContainer}>
-          {/* Gallery Button */}
-          <TouchableOpacity style={styles.galleryButton} onPress={handlePickImage}>
-            <Ionicons name="images" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-
-          {/* Capture Button */}
-          <TouchableOpacity style={styles.captureButton} onPress={handleTakePicture}>
-            <View style={styles.captureButtonInner} />
-          </TouchableOpacity>
-
-          {/* Orientation Button */}
-          <TouchableOpacity style={styles.orientationButton} onPress={handleToggleOrientation}>
-            <Ionicons name="refresh" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+        {/* Guide Frame Section with Overlay */}
+        <View style={styles.guideSection}>
+          <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
+          
+          {/* Overlay Container using Flexbox */}
+          <View style={styles.overlayContainer}>
+            {/* Top Spacer */}
+            <View style={styles.topSpacer} />
+            
+            {/* Middle Row */}
+            <View style={styles.middleRow}>
+              {/* Left Overlay */}
+              <View style={styles.sideOverlay} />
+              
+              {/* Card Frame */}
+              <View style={[
+                styles.cardFrame,
+                orientation === 'landscape' ? styles.landscapeFrame : styles.portraitFrame
+              ]} />
+              
+              {/* Right Overlay */}
+              <View style={styles.sideOverlay} />
+            </View>
+            
+            {/* Bottom Spacer */}
+            <View style={styles.bottomSpacer} />
+          </View>
+          
+          {/* Orientation Toggle */}
+          <View style={styles.orientationToggle}>
+            <TouchableOpacity
+              style={[
+                styles.orientationButton,
+                orientation === 'landscape' && styles.orientationButtonSelected
+              ]}
+              onPress={() => handleOrientationChange('landscape')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.orientationButtonText,
+                orientation === 'landscape' && styles.orientationButtonTextSelected
+              ]}>
+                横向き
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.orientationButton,
+                orientation === 'portrait' && styles.orientationButtonSelected
+              ]}
+              onPress={() => handleOrientationChange('portrait')}
+              activeOpacity={0.7}
+            >
+              <Text style={[
+                styles.orientationButtonText,
+                orientation === 'portrait' && styles.orientationButtonTextSelected
+              ]}>
+                縦向き
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Orientation Toggle Buttons */}
-        <View style={styles.orientationToggle}>
-          <TouchableOpacity style={[styles.orientationOption, styles.orientationActive]}>
-            <Text style={styles.orientationText}>横向き</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.orientationOption}>
-            <Text style={[styles.orientationText, styles.orientationInactive]}>縦向き</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
+        {/* Bottom Controls */}
+        <View style={styles.bottomControls}>
+          <SafeAreaView style={styles.bottomSafeArea}>
+            <View style={styles.controlsContainer}>
+              {/* Gallery Button */}
+              <TouchableOpacity
+                style={styles.galleryButton}
+                onPress={handleGalleryPress}
+                activeOpacity={0.7}
+              >
+                <View style={styles.galleryIcon} />
+              </TouchableOpacity>
+
+              {/* Capture Button */}
+              <TouchableOpacity
+                style={[styles.captureButton, isCapturing && styles.captureButtonDisabled]}
+                onPress={handleCapture}
+                activeOpacity={0.8}
+                disabled={isCapturing}
+              >
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+
+              {/* Flash Button */}
+              <TouchableOpacity
+                style={styles.flashButton}
+                onPress={handleFlashToggle}
+                activeOpacity={0.7}
+              >
+                                 <Ionicons
+                   name={flashMode === 'off' ? "flash-off" : "flash"}
+                   size={32}
+                   color="#FFFFFF"
+                 />
+              </TouchableOpacity>
+            </View>
+                     </SafeAreaView>
+         </View>
+       </CameraView>
+     </View>
+   );
 };
 
 const styles = StyleSheet.create({
@@ -196,101 +285,166 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000000',
   },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000000',
-    paddingHorizontal: 40,
-  },
-  permissionText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  permissionButton: {
-    backgroundColor: '#FF6B35',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  permissionButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  topOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  closeButton: {
-    alignSelf: 'flex-start',
-    padding: 8,
-  },
+  
+  // Camera Styles
   camera: {
     flex: 1,
+    justifyContent: 'space-between',
   },
-  instructionContainer: {
-    position: 'absolute',
-    top: '25%',
-    left: 0,
-    right: 0,
+  
+  // Top Bar Styles
+  topSafeArea: {
+    backgroundColor: 'transparent',
+  },
+  topBar: {
+    height: 60,
+    flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 5,
+    paddingHorizontal: 20,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  topLine: {
+    height: 2,
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    opacity: 0.8,
+  },
+  
+  // Guide Section Styles
+  guideSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 60, // 120px from safe area top minus top bar
   },
   instructionText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '500',
     textAlign: 'center',
+    marginBottom: 40,
   },
-  captureFrame: {
+  
+  // Overlay Styles - Using Flexbox for responsive layout
+  overlayContainer: {
     position: 'absolute',
-    top: '35%',
-    left: '10%',
-    right: '10%',
-    height: '25%',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    borderRadius: 8,
-    zIndex: 5,
-  },
-  bottomOverlay: {
-    position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
-    zIndex: 10,
+    bottom: 0,
+    flex: 1,
   },
-  controlsContainer: {
+  topSpacer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  bottomSpacer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  middleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
   },
-  galleryButton: {
-    width: 50,
-    height: 50,
+  sideOverlay: {
+    flex: 1,
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  
+  // Card Frame Styles
+  cardFrame: {
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  landscapeFrame: {
+    width: 280,
+    height: 180,
+  },
+  portraitFrame: {
+    width: 180,
+    height: 280,
+  },
+  
+  // Orientation Toggle Styles
+  orientationToggle: {
+    flexDirection: 'row',
+    marginTop: 40,
+    gap: 16,
+  },
+  orientationButton: {
+    width: 80,
+    height: 36,
+    backgroundColor: '#666666',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  orientationButtonSelected: {
+    backgroundColor: '#FF6B35',
+  },
+  orientationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  orientationButtonTextSelected: {
+    color: '#FFFFFF',
+  },
+  
+  // Bottom Controls Styles
+  bottomControls: {
+    backgroundColor: 'transparent',
+  },
+  bottomSafeArea: {
+    backgroundColor: 'transparent',
+  },
+  controlsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 40,
+    paddingBottom: 40,
+    height: 120,
+  },
+  
+  // Gallery Button Styles
+  galleryButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  galleryIcon: {
+    width: 32,
+    height: 32,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    borderRadius: 4,
+    backgroundColor: 'transparent',
+  },
+  
+  // Capture Button Styles
   captureButton: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
     borderWidth: 4,
     borderColor: '#FFFFFF',
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureButtonDisabled: {
+    opacity: 0.5,
   },
   captureButtonInner: {
     width: 60,
@@ -298,34 +452,34 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#FFFFFF',
   },
-  orientationButton: {
-    width: 50,
-    height: 50,
+  
+  // Flash Button Styles
+  flashButton: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  orientationToggle: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 20,
-    padding: 4,
-  },
-  orientationOption: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  orientationActive: {
-    backgroundColor: '#FF6B35',
-  },
-  orientationText: {
+  
+  // Permission Styles
+  permissionText: {
     color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 100,
   },
-  orientationInactive: {
-    color: '#CCCCCC',
+  settingsButton: {
+    backgroundColor: '#FF6B35',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  settingsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
 

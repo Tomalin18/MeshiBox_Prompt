@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import LoadingScreen from './src/screens/LoadingScreen';
 import SubscriptionScreen from './src/screens/SubscriptionScreen';
 import CameraScreen from './src/screens/CameraScreen';
@@ -13,7 +13,6 @@ type ScreenType = 'loading' | 'subscription' | 'camera' | 'detail' | 'edit' | 'l
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('loading');
-  const [showDevNav, setShowDevNav] = useState(false);
 
   const mockNavigation = {
     goBack: () => {
@@ -21,23 +20,53 @@ export default function App() {
         setCurrentScreen('list');
       } else if (currentScreen === 'camera') {
         setCurrentScreen('list');
+      } else if (currentScreen === 'settings') {
+        setCurrentScreen('list');
       } else {
         setCurrentScreen('list');
       }
     },
     navigate: (screen: string, params?: any) => {
-      if (screen === 'Subscription') {
-        setCurrentScreen('subscription');
-      } else if (screen === 'CardList') {
-        setCurrentScreen('list');
-      } else if (screen === 'CardEdit') {
-        setCurrentScreen('edit');
-      } else if (screen === 'CardDetail') {
-        setCurrentScreen('detail');
-      } else if (screen === 'Camera') {
-        setCurrentScreen('camera');
-      } else if (screen === 'Settings') {
-        setCurrentScreen('settings');
+      switch (screen) {
+        case 'subscription':
+          setCurrentScreen('subscription');
+          break;
+        case 'list':
+          setCurrentScreen('list');
+          break;
+        case 'camera':
+          setCurrentScreen('camera');
+          break;
+        case 'detail':
+          setCurrentScreen('detail');
+          break;
+        case 'edit':
+          setCurrentScreen('edit');
+          break;
+        case 'settings':
+          setCurrentScreen('settings');
+          break;
+        // Legacy support for old navigation calls
+        case 'Subscription':
+          setCurrentScreen('subscription');
+          break;
+        case 'CardList':
+          setCurrentScreen('list');
+          break;
+        case 'CardEdit':
+          setCurrentScreen('edit');
+          break;
+        case 'CardDetail':
+          setCurrentScreen('detail');
+          break;
+        case 'Camera':
+          setCurrentScreen('camera');
+          break;
+        case 'Settings':
+          setCurrentScreen('settings');
+          break;
+        default:
+          setCurrentScreen('list');
       }
     },
   };
@@ -65,54 +94,8 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       {renderScreen()}
-      
-      {/* Development Navigation - 只在非載入和訂閱畫面顯示 */}
-      {showDevNav && currentScreen !== 'loading' && currentScreen !== 'subscription' && (
-        <View style={styles.devNav}>
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === 'list' && styles.activeButton]} 
-            onPress={() => setCurrentScreen('list')}
-          >
-            <Text style={styles.navText}>List</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === 'camera' && styles.activeButton]} 
-            onPress={() => setCurrentScreen('camera')}
-          >
-            <Text style={styles.navText}>Cam</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === 'detail' && styles.activeButton]} 
-            onPress={() => setCurrentScreen('detail')}
-          >
-            <Text style={styles.navText}>Detail</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === 'edit' && styles.activeButton]} 
-            onPress={() => setCurrentScreen('edit')}
-          >
-            <Text style={styles.navText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.navButton, currentScreen === 'settings' && styles.activeButton]} 
-            onPress={() => setCurrentScreen('settings')}
-          >
-            <Text style={styles.navText}>Set</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      
-      {/* 開發者模式切換按鈕 */}
-      {currentScreen !== 'loading' && currentScreen !== 'subscription' && (
-        <TouchableOpacity 
-          style={styles.devToggle}
-          onPress={() => setShowDevNav(!showDevNav)}
-        >
-          <Text style={styles.devToggleText}>{showDevNav ? '隱藏' : '開發'}</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -120,44 +103,6 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
-  },
-  devNav: {
-    position: 'absolute',
-    bottom: 80,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    borderRadius: 20,
-    paddingVertical: 10,
-  },
-  navButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 15,
-  },
-  activeButton: {
-    backgroundColor: '#FF6B35',
-  },
-  navText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  devToggle: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    backgroundColor: 'rgba(255, 107, 53, 0.8)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  devToggleText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: 'bold',
+    backgroundColor: '#FFFFFF',
   },
 });

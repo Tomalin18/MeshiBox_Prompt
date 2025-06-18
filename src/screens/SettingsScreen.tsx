@@ -4,435 +4,397 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
+  StatusBar,
+  ScrollView,
   Alert,
   Linking,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { StorageService } from '../services/StorageService';
-import { ExportService } from '../services/ExportService';
 
 interface Props {
-  navigation?: {
-    goBack: () => void;
+  navigation: {
     navigate: (screen: string, params?: any) => void;
+    goBack: () => void;
   };
 }
 
-interface UserSubscription {
-  status: 'free' | 'trial' | 'premium';
-  remainingScans: number;
-  maxScans: number;
-  features: string[];
-  expiryDate?: Date;
-  trialDays?: number;
-}
-
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
-  const [subscription, setSubscription] = useState<UserSubscription>({
-    status: 'free',
-    remainingScans: 50,
-    maxScans: 50,
-    features: [],
-  });
   const [scanCount, setScanCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const appVersion = '1.0.04';
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    StatusBar.setBarStyle('dark-content');
+    StatusBar.setBackgroundColor('#FFFFFF', true);
     loadUserData();
   }, []);
 
   const loadUserData = async () => {
     try {
-      const currentScanCount = await StorageService.getScanCount();
-      setScanCount(currentScanCount);
-      
-      // Update remaining scans
-      setSubscription(prev => ({
-        ...prev,
-        remainingScans: Math.max(0, prev.maxScans - currentScanCount),
-      }));
+      const count = await StorageService.getScanCount();
+      setScanCount(count);
     } catch (error) {
       console.error('Failed to load user data:', error);
-    }
-  };
-
-  const handleRestorePurchase = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      Alert.alert(
-        '購入を復元',
-        '購入の復元を開始しています...',
-        [
-          { text: 'キャンセル', style: 'cancel' },
-          {
-            text: 'OK',
-            onPress: () => {
-              setTimeout(() => {
-                Alert.alert('成功', '購入が復元されました');
-                setSubscription({ ...subscription, status: 'premium' });
-              }, 1000);
-            },
-          },
-        ]
-      );
-    } catch (error) {
-      Alert.alert('エラー', '購入の復元に失敗しました');
-    }
-  };
-
-  const handleExportFeatures = async () => {
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    if (subscription.status === 'free') {
-      Alert.alert(
-        'Pro機能',
-        'この機能を使用するにはPro版にアップグレードしてください',
-        [
-          { text: 'キャンセル', style: 'cancel' },
-          {
-            text: 'アップグレード',
-            onPress: () => {
-              if (navigation) {
-                navigation.navigate('Subscription');
-              }
-            },
-          },
-        ]
-      );
-    } else {
-      Alert.alert(
-        'エクスポート',
-        'エクスポート形式を選択してください',
-        [
-          { text: 'CSV', onPress: () => handleExport('csv') },
-          { text: 'vCard', onPress: () => handleExport('vcard') },
-          { text: '連絡先に追加', onPress: () => handleExport('contacts') },
-          { text: 'キャンセル', style: 'cancel' },
-        ]
-      );
-    }
-  };
-
-  const handleExport = async (format: string) => {
-    if (isLoading) return;
-    
-    try {
-      setIsLoading(true);
-      const businessCards = await StorageService.getAllBusinessCards();
-      
-      if (businessCards.length === 0) {
-        Alert.alert('エラー', '保存された名刺がありません');
-        return;
-      }
-
-      switch (format) {
-        case 'csv':
-          await ExportService.saveAndShareCSV(businessCards);
-          Alert.alert('成功', 'CSV ファイルが作成されました');
-          break;
-        case 'vcard':
-          await ExportService.saveAndShareVCard(businessCards);
-          Alert.alert('成功', 'vCard ファイルが作成されました');
-          break;
-        case 'contacts':
-          const result = await ExportService.exportToContacts(businessCards);
-          Alert.alert('連絡先に追加完了', `成功: ${result.success}件\n失敗: ${result.failed}件`);
-          break;
-        default:
-          Alert.alert('エラー', 'サポートされていない形式です');
-      }
-    } catch (error) {
-      console.error('Export failed:', error);
-      Alert.alert('エラー', 'エクスポートに失敗しました');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRateApp = () => {
+  const handleRestorePurchases = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      '購入の復元',
+      '購入履歴を確認しています...',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleExport = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      'データエクスポート',
+      'Pro版でご利用いただけます',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleRate = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       'アプリを評価',
-      'App Storeでアプリを評価しますか？',
+      'App Storeで評価していただけますか？',
       [
         { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '評価する',
-          onPress: () => {
-            Linking.openURL('https://apps.apple.com/app/id123456789');
-          },
-        },
+        { text: '評価する', onPress: () => {
+          // App Store URL would go here
+          console.log('Opening App Store for rating');
+        }}
       ]
     );
   };
 
   const handleContact = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       'お問い合わせ',
-      'お問い合わせ方法を選択してください',
-      [
-        {
-          text: 'メール',
-          onPress: () => {
-            Linking.openURL('mailto:support@meishibox.com?subject=MeishiBox お問い合わせ');
-          },
-        },
-        {
-          text: 'ウェブサイト',
-          onPress: () => {
-            Linking.openURL('https://meishibox.com/support');
-          },
-        },
-        { text: 'キャンセル', style: 'cancel' },
-      ]
+      'サポートチームにご連絡いたします',
+      [{ text: 'OK' }]
     );
   };
 
-  const getMembershipStatusText = () => {
-    switch (subscription.status) {
-      case 'free':
-        return 'メンバーシップの状態 無料版';
-      case 'trial':
-        return 'メンバーシップの状態 無料トライアル';
-      case 'premium':
-        return 'メンバーシップの状態 プレミアム';
-      default:
-        return 'メンバーシップの状態 無料版';
-    }
+  const handleGoBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.goBack();
   };
 
-  const getMembershipIcon = () => {
-    switch (subscription.status) {
-      case 'premium':
-        return 'crown';
-      case 'trial':
-        return 'diamond';
-      default:
-        return 'person-circle-outline';
-    }
+  const handleCardListPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('cardList');
   };
 
-  const renderMenuItem = (
+  const handleCameraPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    navigation.navigate('camera');
+  };
+
+  const renderSectionTitle = (title: string) => (
+    <Text style={styles.sectionTitle}>{title}</Text>
+  );
+
+  const renderCard = (
     icon: string,
     title: string,
     subtitle?: string,
-    onPress?: () => void,
-    showArrow: boolean = true
+    onPress?: () => void
   ) => (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <View style={styles.menuItemLeft}>
-        <View style={styles.iconContainer}>
-          <Ionicons name={icon as any} size={20} color="#FF6B35" />
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.cardContent}>
+        <Ionicons name={icon as any} size={24} color="#666666" style={styles.cardIcon} />
+        <View style={styles.cardTextContainer}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          {subtitle && <Text style={styles.cardSubtitle}>{subtitle}</Text>}
         </View>
-        <View style={styles.menuItemText}>
-          <Text style={styles.menuItemTitle}>{title}</Text>
-          {subtitle && <Text style={styles.menuItemSubtitle}>{subtitle}</Text>}
-        </View>
-      </View>
-      {showArrow && (
         <Ionicons name="chevron-forward" size={20} color="#CCCCCC" />
-      )}
+      </View>
     </TouchableOpacity>
   );
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>載入中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const remainingScans = Math.max(0, 50 - scanCount);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Header */}
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      
+      {/* Header */}
+      <SafeAreaView style={styles.headerSafeArea}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>設定</Text>
         </View>
+      </SafeAreaView>
 
+      {/* Content */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Membership Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>メンバーシップ</Text>
+          {renderSectionTitle('メンバーシップ')}
           
-          <View style={styles.membershipCard}>
-            <View style={styles.membershipInfo}>
-              <Ionicons name={getMembershipIcon() as any} size={24} color="#FF6B35" />
-              <View style={styles.membershipText}>
-                <Text style={styles.membershipStatus}>{getMembershipStatusText()}</Text>
-                <Text style={styles.membershipSubtitle}>
-                  残りスキャン回数: {subscription.remainingScans}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {renderMenuItem(
+          {renderCard(
+            'diamond',
+            'メンバーシップの状態 無料版',
+            `残りスキャン回数: ${remainingScans}`,
+            () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              navigation.navigate('subscription');
+            }
+          )}
+          
+          {renderCard(
             'refresh',
             '購入を復元',
             undefined,
-            handleRestorePurchase,
-            true
+            handleRestorePurchases
           )}
         </View>
 
         {/* Pro Features Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>settings.section.pro_features</Text>
+          {renderSectionTitle('settings.section.pro_features')}
           
-          {renderMenuItem(
+          {renderCard(
             'document-text',
             'settings.pro_features.export_to_...',
             undefined,
-            handleExportFeatures,
-            true
+            handleExport
           )}
         </View>
 
         {/* Support Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>サポート</Text>
+          {renderSectionTitle('サポート')}
           
-          {renderMenuItem(
+          {renderCard(
             'thumbs-up',
             '評価する',
             undefined,
-            handleRateApp,
-            true
+            handleRate
           )}
           
-          {renderMenuItem(
-            'chatbubble-ellipses',
+          {renderCard(
+            'chatbubble',
             'お問い合わせ',
             undefined,
-            handleContact,
-            true
+            handleContact
           )}
         </View>
 
-        {/* App Info Section */}
-        <View style={styles.appInfoSection}>
-          <Text style={styles.appVersion}>Ver. {appVersion} Made in Keelung ❤️</Text>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.versionText}>Ver. 1.0.04 Made in Keelung ❤️</Text>
         </View>
-
-        <View style={styles.bottomSpacing} />
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Bottom Navbar */}
+      <View style={styles.bottomTabs}>
+        <View style={styles.tabContainer}>
+          {/* 名刺一覽 Tab */}
+          <TouchableOpacity
+            style={styles.tab}
+            onPress={handleCardListPress}
+            activeOpacity={0.7}
+          >
+            <View style={styles.tabIconContainer}>
+              <Ionicons name="albums" size={24} color="#999999" />
+            </View>
+            <Text style={styles.tabText}>名刺一覽</Text>
+          </TouchableOpacity>
+          
+          {/* Camera Tab - Center */}
+          <TouchableOpacity
+            style={styles.cameraTab}
+            onPress={handleCameraPress}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="camera" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          {/* 設定 Tab - Selected */}
+          <TouchableOpacity style={styles.tab} activeOpacity={0.7}>
+            <View style={styles.tabIconContainer}>
+              <Ionicons name="settings" size={24} color="#FF6B35" />
+            </View>
+            <Text style={[styles.tabText, styles.tabTextSelected]}>設定</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#F8F8F8',
   },
-  content: {
-    flex: 1,
+  
+  // Header Styles
+  headerSafeArea: {
+    backgroundColor: '#FFFFFF',
   },
   header: {
+    height: 100,
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333333',
-  },
-  section: {
-    marginBottom: 32,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF6B35',
-    marginBottom: 16,
+    alignItems: 'center',
     paddingHorizontal: 20,
-  },
-  membershipCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginBottom: 12,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
-  membershipInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000000',
+    textAlign: 'center',
   },
-  membershipText: {
-    marginLeft: 12,
+  
+  // Content Styles
+  content: {
     flex: 1,
+    backgroundColor: '#F8F8F8',
   },
-  membershipStatus: {
+  
+  // Section Styles
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333333',
-    marginBottom: 4,
-  },
-  membershipSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
+    color: '#FF6B35',
+    marginLeft: 20,
+    marginTop: 20,
     marginBottom: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
-  menuItemLeft: {
+  
+  // Card Styles
+  card: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginVertical: 1,
+    borderRadius: 12,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  cardContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  cardIcon: {
+    marginRight: 16,
+  },
+  cardTextContainer: {
     flex: 1,
   },
-  iconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#FFF3E0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuItemText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  menuItemTitle: {
+  cardTitle: {
     fontSize: 16,
-    color: '#333333',
     fontWeight: '500',
+    color: '#000000',
+    marginBottom: 2,
   },
-  menuItemSubtitle: {
+  cardSubtitle: {
     fontSize: 14,
     color: '#666666',
-    marginTop: 2,
   },
-  appInfoSection: {
+  
+  // Footer Styles
+  footer: {
     alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 20,
+    marginTop: 40,
+    marginBottom: 60,
   },
-  appVersion: {
+  versionText: {
     fontSize: 14,
     color: '#999999',
     textAlign: 'center',
   },
-  bottomSpacing: {
-    height: 40,
+  
+  // Loading Styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666666',
+  },
+  
+  // Bottom Tabs Styles
+  bottomTabs: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  tabContainer: {
+    height: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabIconContainer: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabText: {
+    fontSize: 12,
+    color: '#999999',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  tabTextSelected: {
+    color: '#FF6B35',
+  },
+  cameraTab: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 20,
   },
 });
 
