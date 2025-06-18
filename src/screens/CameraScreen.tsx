@@ -179,9 +179,9 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
         flash={flashMode}
       />
 
-      {/* Full Screen Overlay Container - 修復：移到 CameraView 外部 */}
+      {/* 修復：Full Screen Overlay Container */}
       <View style={styles.overlayContainer} pointerEvents="box-none">
-        {/* Top Spacer with Controls */}
+        {/* Top Spacer with Controls and Guide Text */}
         <View style={styles.topSpacer}>
           <SafeAreaView style={styles.topSafeArea}>
             <View style={styles.topBar}>
@@ -190,30 +190,16 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
                 onPress={handleClose}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={28} color="#FFFFFF" />
+                <Ionicons name="close" size={32} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
-            
-            {/* Loading Bar Style Line */}
             <View style={styles.topLine} />
           </SafeAreaView>
-        </View>
-        
-        {/* Middle Row */}
-        <View style={styles.middleRow}>
-          {/* Left Overlay */}
-          <View style={styles.sideOverlay} />
           
-          {/* Center Content Area */}
-          <View style={styles.centerContent}>
+          {/* Guide Content in Black Area */}
+          <View style={styles.guideContent}>
             {/* Instruction Text */}
             <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
-            
-            {/* Card Frame */}
-            <View style={[
-              styles.cardFrame,
-              orientation === 'landscape' ? styles.landscapeFrame : styles.portraitFrame
-            ]} />
             
             {/* Orientation Toggle */}
             <View style={styles.orientationToggle}>
@@ -249,6 +235,20 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+        
+        {/* Middle Row - Only Card Frame Area (Transparent) */}
+        <View style={styles.middleRow}>
+          {/* Left Overlay */}
+          <View style={styles.sideOverlay} />
+          
+          {/* Center - Only Card Frame (Transparent) */}
+          <View style={styles.cardFrameContainer}>
+            <View style={[
+              styles.cardFrame,
+              orientation === 'landscape' ? styles.landscapeFrame : styles.portraitFrame
+            ]} />
           </View>
           
           {/* Right Overlay */}
@@ -351,24 +351,11 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   
-  // Middle Row
-  middleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  
-  // Side Overlays
-  sideOverlay: {
+  // Guide Content Styles
+  guideContent: {
     flex: 1,
-    height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-  },
-  
-  // Center Content Area
-  centerContent: {
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   
   // Instruction Text
@@ -378,22 +365,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     marginBottom: 40,
-  },
-  
-  // Card Frame Styles
-  cardFrame: {
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-  },
-  landscapeFrame: {
-    width: 280,
-    height: 180,
-  },
-  portraitFrame: {
-    width: 180,
-    height: 280,
   },
   
   // Orientation Toggle Styles
@@ -420,6 +391,42 @@ const styles = StyleSheet.create({
   },
   orientationButtonTextSelected: {
     color: '#FFFFFF',
+  },
+  
+  // Middle Row
+  middleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  // Side Overlays
+  sideOverlay: {
+    flex: 1,
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  
+  // Center Content Area - Card Frame Container
+  cardFrameContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Card Frame Styles
+  cardFrame: {
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  landscapeFrame: {
+    width: 280,
+    height: 180,
+  },
+  portraitFrame: {
+    width: 180,
+    height: 280,
   },
   
   // Bottom Spacer with Controls
