@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { GoogleAIOCRService } from '../services/GoogleAIOCRService';
+import { ImageProcessingService } from '../services/ImageProcessingService';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -126,36 +127,57 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
 
       if (photo) {
         // 計算裁剪區域
-        const cropData = getCropArea();
-        const imageUri = photo.uri;
+        const cropData = ImageProcessingService.getCropArea(orientation);
+        const originalImageUri = photo.uri;
         
         // 顯示 OCR 處理狀態
         setIsProcessingOCR(true);
         
         try {
-          // 進行 OCR 分析
-          const ocrData = await GoogleAIOCRService.processBusinessCard(imageUri);
+          // 1. 先裁剪圖片（只保留名片部分）
+          const croppedImageUri = await ImageProcessingService.cropBusinessCard(
+            originalImageUri, 
+            cropData, 
+            orientation
+          );
           
           if (!isMounted) return;
           
-          // 導航到編輯頁面並帶入 OCR 結果
+          // 2. 進行 OCR 分析（使用裁剪後的圖片）
+          const ocrData = await GoogleAIOCRService.processBusinessCard(croppedImageUri);
+          
+          if (!isMounted) return;
+          
+          // 3. 導航到編輯頁面並帶入 OCR 結果（使用裁剪後的圖片）
           navigation.navigate('cardEdit', { 
-            imageUri: imageUri,
+            imageUri: croppedImageUri,
             ocrData: ocrData,
             fromCamera: true,
-            cropArea: cropData,
             orientation: orientation,
           });
         } catch (error) {
           console.error('OCR processing failed:', error);
           if (isMounted) {
-            // 即使 OCR 失敗，仍然導航到編輯頁面
-            navigation.navigate('cardEdit', { 
-              imageUri: imageUri,
-              fromCamera: true,
-              cropArea: cropData,
-              orientation: orientation,
-            });
+            // 即使 OCR 失敗，仍然導航到編輯頁面（使用裁剪後的圖片）
+            try {
+              const croppedImageUri = await ImageProcessingService.cropBusinessCard(
+                originalImageUri, 
+                cropData, 
+                orientation
+              );
+              navigation.navigate('cardEdit', { 
+                imageUri: croppedImageUri,
+                fromCamera: true,
+                orientation: orientation,
+              });
+            } catch (cropError) {
+              // 如果裁剪也失敗，使用原圖
+              navigation.navigate('cardEdit', { 
+                imageUri: originalImageUri,
+                fromCamera: true,
+                orientation: orientation,
+              });
+            }
           }
         } finally {
           if (isMounted) {
@@ -175,26 +197,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const getCropArea = () => {
-    // 計算導引框在屏幕中的位置和大小
-    const frameWidth = orientation === 'landscape' ? 280 : 180;
-    const frameHeight = orientation === 'landscape' ? 180 : 280;
-    
-    // 計算框架在屏幕中的中心位置
-    const centerX = screenWidth / 2;
-    const centerY = screenHeight / 2;
-    
-    // 計算裁剪區域的左上角座標
-    const cropX = centerX - frameWidth / 2;
-    const cropY = centerY - frameHeight / 2;
-    
-    return {
-      x: cropX,
-      y: cropY,
-      width: frameWidth,
-      height: frameHeight,
-    };
-  };
+
 
   const handleFlashToggle = () => {
     if (!isMounted) return;

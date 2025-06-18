@@ -1,6 +1,6 @@
-import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { BusinessCard } from '../types';
+import { ImageProcessingService } from './ImageProcessingService';
 
 export interface GoogleAIOCRResult {
   name?: string;
@@ -24,18 +24,7 @@ export class GoogleAIOCRService {
   // 圖片預處理
   static async preprocessImage(imageUri: string): Promise<string> {
     try {
-      const manipulatedImage = await ImageManipulator.manipulateAsync(
-        imageUri,
-        [
-          { resize: { width: 1200 } }, // 調整大小以提高 OCR 準確性
-          { rotate: 0 }, // 確保圖片方向正確
-        ],
-        {
-          compress: 0.8,
-          format: ImageManipulator.SaveFormat.JPEG,
-        }
-      );
-      return manipulatedImage.uri;
+      return await ImageProcessingService.optimizeForOCR(imageUri);
     } catch (error) {
       console.error('Image preprocessing failed:', error);
       return imageUri;
