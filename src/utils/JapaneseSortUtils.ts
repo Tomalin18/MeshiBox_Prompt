@@ -128,9 +128,15 @@ const KANJI_READING_MAP: { [key: string]: string } = {
 export class JapaneseSortUtils {
   /**
    * 將文字轉換為假名進行排序比較
+   * 優先使用提供的讀音，如果沒有則嘗試自動轉換
    */
-  static getKanaForSorting(text: string): string {
+  static getKanaForSorting(text: string, reading?: string): string {
     if (!text) return '';
+    
+    // 如果提供了讀音，直接使用
+    if (reading && reading.trim()) {
+      return this.normalizeKana(reading.trim());
+    }
     
     // 移除空格和特殊字符
     const cleanText = text.trim();
@@ -141,9 +147,9 @@ export class JapaneseSortUtils {
     }
     
     // 嘗試從漢字讀音對照表查找
-    const reading = this.getKanjiReading(cleanText);
-    if (reading) {
-      return reading;
+    const autoReading = this.getKanjiReading(cleanText);
+    if (autoReading) {
+      return autoReading;
     }
     
     // 如果是英文或其他字符，返回原文
@@ -210,10 +216,11 @@ export class JapaneseSortUtils {
   
   /**
    * 比較兩個文字的假名順序
+   * 支援讀音參數
    */
-  static compareKana(a: string, b: string): number {
-    const kanaA = this.getKanaForSorting(a);
-    const kanaB = this.getKanaForSorting(b);
+  static compareKana(a: string, b: string, readingA?: string, readingB?: string): number {
+    const kanaA = this.getKanaForSorting(a, readingA);
+    const kanaB = this.getKanaForSorting(b, readingB);
     
     // 逐字符比較
     const maxLength = Math.max(kanaA.length, kanaB.length);
@@ -238,9 +245,10 @@ export class JapaneseSortUtils {
   
   /**
    * 獲取分組標籤（あいうえお分組）
+   * 支援讀音參數
    */
-  static getGroupLabel(text: string): string {
-    const kana = this.getKanaForSorting(text);
+  static getGroupLabel(text: string, reading?: string): string {
+    const kana = this.getKanaForSorting(text, reading);
     if (!kana) return '#';
     
     const firstChar = kana[0];
@@ -268,30 +276,43 @@ export class JapaneseSortUtils {
   
   /**
    * 排序名片數組（按姓名）
+   * 使用nameReading欄位
    */
-  static sortByName<T extends { name: string }>(items: T[]): T[] {
-    return [...items].sort((a, b) => this.compareKana(a.name, b.name));
+  static sortByName<T extends { name: string; nameReading?: string }>(items: T[]): T[] {
+    return [...items].sort((a, b) => this.compareKana(a.name, b.name, a.nameReading, b.nameReading));
   }
   
   /**
    * 排序名片數組（按公司名）
+   * 使用companyReading欄位
    */
-  static sortByCompany<T extends { company: string }>(items: T[]): T[] {
-    return [...items].sort((a, b) => this.compareKana(a.company, b.company));
+  static sortByCompany<T extends { company: string; companyReading?: string }>(items: T[]): T[] {
+    return [...items].sort((a, b) => this.compareKana(a.company, b.company, a.companyReading, b.companyReading));
   }
   
   /**
    * 分組名片數組
+   * 使用對應的讀音欄位
    */
-  static groupItems<T extends { name: string }>(
+  static groupItems<T extends { name: string; nameReading?: string; company?: string; companyReading?: string }>(
     items: T[], 
     groupBy: 'name' | 'company' = 'name'
   ): Array<{ letter: string; items: T[] }> {
     const groups: { [key: string]: T[] } = {};
     
     items.forEach(item => {
-      const text = groupBy === 'name' ? item.name : (item as any).company;
-      const groupLabel = this.getGroupLabel(text);
+      let text: string;
+      let reading: string | undefined;
+      
+      if (groupBy === 'name') {
+        text = item.name;
+        reading = item.nameReading;
+      } else {
+        text = (item as any).company;
+        reading = (item as any).companyReading;
+      }
+      
+      const groupLabel = this.getGroupLabel(text, reading);
       
       if (!groups[groupLabel]) {
         groups[groupLabel] = [];

@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   Linking,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -167,11 +168,24 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Business Card Image */}
+        {card.imageUri && (
+          <View style={styles.cardImageSection}>
+            <Image source={{ uri: card.imageUri }} style={styles.cardImage} resizeMode="contain" />
+          </View>
+        )}
+
         {/* Card Basic Information */}
         <View style={styles.cardInfoSection}>
           <View style={styles.cardInfoContainer}>
             <Text style={styles.cardName}>{card.name}</Text>
+            {card.nameReading && (
+              <Text style={styles.cardNameReading}>{card.nameReading}</Text>
+            )}
             <Text style={styles.cardCompany}>{card.company}</Text>
+            {card.companyReading && (
+              <Text style={styles.cardCompanyReading}>{card.companyReading}</Text>
+            )}
             {card.department && (
               <Text style={styles.cardDepartment}>{card.department}</Text>
             )}
@@ -419,7 +433,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FF6B35',
   },
+  cardNameReading: {
+    fontSize: 16,
+    color: '#666666',
+  },
   cardCompany: {
+    fontSize: 16,
+    color: '#666666',
+  },
+  cardCompanyReading: {
     fontSize: 16,
     color: '#666666',
   },
@@ -430,6 +452,13 @@ const styles = StyleSheet.create({
   cardPosition: {
     fontSize: 16,
     color: '#666666',
+  },
+  cardImageSection: {
+    marginBottom: 24,
+  },
+  cardImage: {
+    width: '100%',
+    height: 200,
   },
 });
 

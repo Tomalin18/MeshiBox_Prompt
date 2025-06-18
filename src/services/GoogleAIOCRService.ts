@@ -4,7 +4,9 @@ import { ImageProcessingService } from './ImageProcessingService';
 
 export interface GoogleAIOCRResult {
   name?: string;
+  nameReading?: string; // 姓名讀音（ふりがな）
   company?: string;
+  companyReading?: string; // 公司名讀音
   department?: string;
   position?: string;
   phone?: string;
@@ -63,7 +65,9 @@ export class GoogleAIOCRService {
 
 要提取的欄位：
 - name: 姓名
+- nameReading: 姓名讀音（ふりがな）
 - company: 公司名稱  
+- companyReading: 公司名讀音
 - department: 部門
 - position: 職位
 - phone: 固定電話
@@ -78,7 +82,7 @@ export class GoogleAIOCRService {
 重要：請直接返回 JSON 對象，不要使用 \`\`\`json 標記，不要添加任何解釋文字。如果某欄位沒有信息請設為空字符串。
 
 直接返回格式如下：
-{"name":"","company":"","department":"","position":"","phone":"","mobile":"","fax":"","email":"","website":"","address":"","postalCode":"","memo":""}`
+{"name":"","nameReading":"","company":"","companyReading":"","department":"","position":"","phone":"","mobile":"","fax":"","email":"","website":"","address":"","postalCode":"","memo":""}`
               },
               {
                 inline_data: {
@@ -230,7 +234,9 @@ export class GoogleAIOCRService {
       // 轉換為 BusinessCard 格式
       const businessCard: Partial<BusinessCard> = {
         name: ocrResult.name || '',
+        nameReading: ocrResult.nameReading || '',
         company: ocrResult.company || '',
+        companyReading: ocrResult.companyReading || '',
         department: ocrResult.department || '',
         position: ocrResult.position || '',
         phone: ocrResult.phone || '',
@@ -251,7 +257,9 @@ export class GoogleAIOCRService {
       // 如果 OCR 失敗，返回空的名片數據但保留圖片
       return {
         name: '',
+        nameReading: '',
         company: '',
+        companyReading: '',
         department: '',
         position: '',
         phone: '',

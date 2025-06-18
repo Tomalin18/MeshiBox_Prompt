@@ -236,8 +236,10 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
             {/* Form Fields */}
             <View style={styles.formFields}>
               {renderInputField('person-outline', '鴨山かほり', 'name')}
+              {renderInputField('text-outline', 'かもやま かほり', 'nameReading')}
               {renderInputField('briefcase-outline', '役職', 'position')}
               {renderInputField('business-outline', '統一企業集團', 'company')}
+              {renderInputField('text-outline', 'とういつきぎょうしゅうだん', 'companyReading')}
               {renderInputField('folder-outline', '輸入國內事業部', 'department')}
             </View>
           </View>

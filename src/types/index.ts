@@ -1,7 +1,9 @@
 export interface BusinessCard {
   id: string;
   name: string;
+  nameReading?: string;
   company: string;
+  companyReading?: string;
   department?: string;
   position?: string;
   phone?: string;

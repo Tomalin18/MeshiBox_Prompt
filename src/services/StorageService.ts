@@ -93,7 +93,9 @@ export class StorageService {
       
       return allCards.filter(card => 
         card.name.toLowerCase().includes(lowercaseQuery) ||
+        card.nameReading?.toLowerCase().includes(lowercaseQuery) ||
         card.company.toLowerCase().includes(lowercaseQuery) ||
+        card.companyReading?.toLowerCase().includes(lowercaseQuery) ||
         card.department?.toLowerCase().includes(lowercaseQuery) ||
         card.email?.toLowerCase().includes(lowercaseQuery) ||
         card.memo?.toLowerCase().includes(lowercaseQuery)
