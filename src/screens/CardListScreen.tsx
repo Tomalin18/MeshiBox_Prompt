@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { BusinessCard } from '../types';
 import { StorageService } from '../services/StorageService';
+import { JapaneseSortUtils } from '../utils/JapaneseSortUtils';
 
 const { width } = Dimensions.get('window');
 
@@ -60,34 +61,50 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
   }, [cards, searchQuery]);
 
   const groupedCards = useMemo(() => {
-    const groups: { [key: string]: BusinessCard[] } = {};
     let sortedCards = [...filteredCards];
     
-    // Sort cards based on selected option
+    // Sort cards based on selected option using Japanese sorting
     switch (sortBy) {
       case 'name':
-        sortedCards.sort((a, b) => a.name.localeCompare(b.name));
+        sortedCards = JapaneseSortUtils.sortByName(sortedCards);
         break;
       case 'company':
-        sortedCards.sort((a, b) => a.company.localeCompare(b.company));
+        sortedCards = JapaneseSortUtils.sortByCompany(sortedCards);
         break;
       case 'date':
         sortedCards.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
     }
     
-    sortedCards.forEach(card => {
-      const firstLetter = card.name.charAt(0).toUpperCase();
-      if (!groups[firstLetter]) {
-        groups[firstLetter] = [];
-      }
-      groups[firstLetter].push(card);
-    });
-    
-    return Object.keys(groups).sort().map(letter => ({
-      letter,
-      cards: groups[letter],
-    }));
+    // Group cards using Japanese grouping
+    if (sortBy === 'date') {
+      // For date sorting, group by date
+      const groups: { [key: string]: BusinessCard[] } = {};
+      sortedCards.forEach(card => {
+        const dateKey = new Date(card.createdAt).toLocaleDateString('ja-JP', { 
+          year: 'numeric', 
+          month: 'long' 
+        });
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        groups[dateKey].push(card);
+      });
+      
+      return Object.keys(groups).sort().map(letter => ({
+        letter,
+        cards: groups[letter],
+      }));
+    } else {
+      // For name and company sorting, use Japanese grouping
+      const groupBy = sortBy === 'name' ? 'name' : 'company';
+      const groupedItems = JapaneseSortUtils.groupItems(sortedCards, groupBy);
+      
+      return groupedItems.map(group => ({
+        letter: group.letter,
+        cards: group.items,
+      }));
+    }
   }, [filteredCards, sortBy]);
 
   const handleCardPress = (card: BusinessCard) => {

@@ -167,6 +167,20 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Card Basic Information */}
+        <View style={styles.cardInfoSection}>
+          <View style={styles.cardInfoContainer}>
+            <Text style={styles.cardName}>{card.name}</Text>
+            <Text style={styles.cardCompany}>{card.company}</Text>
+            {card.department && (
+              <Text style={styles.cardDepartment}>{card.department}</Text>
+            )}
+            {card.position && (
+              <Text style={styles.cardPosition}>{card.position}</Text>
+            )}
+          </View>
+        </View>
+
         {/* Contact Information Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -176,43 +190,51 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.cardContainer}>
             {/* Mobile Phone */}
-            {renderContactItem(
+            {card.mobile && renderContactItem(
               'phone-portrait-outline',
-              '070-1319-4481',
+              card.mobile,
               'call',
-              () => handlePhoneCall('070-1319-4481')
+              () => handlePhoneCall(card.mobile!)
             )}
 
             {/* Office Phone */}
-            {renderContactItem(
+            {card.phone && renderContactItem(
               'call-outline',
-              '03-6264-9166',
+              card.phone,
               'call',
-              () => handlePhoneCall('03-6264-9166')
+              () => handlePhoneCall(card.phone!)
             )}
 
             {/* Fax */}
-            {renderContactItem(
+            {card.fax && renderContactItem(
               'print-outline',
-              '03-6264-9195',
+              card.fax,
               'call',
-              () => handlePhoneCall('03-6264-9195')
+              () => handlePhoneCall(card.fax!)
             )}
 
             {/* Email */}
-            {renderContactItem(
+            {card.email && renderContactItem(
               'mail-outline',
-              'k_shigiyama88@ptm-tokyo.co.jp',
+              card.email,
               'mail',
-              () => handleEmail('k_shigiyama88@ptm-tokyo.co.jp')
+              () => handleEmail(card.email!)
+            )}
+
+            {/* Sub Email */}
+            {card.subEmail && renderContactItem(
+              'mail-outline',
+              card.subEmail,
+              'mail',
+              () => handleEmail(card.subEmail!)
             )}
 
             {/* Website */}
-            {renderContactItem(
+            {card.website && renderContactItem(
               'globe-outline',
-              'http://ptm-tokyo.co.jp',
+              card.website,
               'open-outline',
-              () => handleWebsite('http://ptm-tokyo.co.jp')
+              () => handleWebsite(card.website!)
             )}
           </View>
         </View>
@@ -226,35 +248,55 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.cardContainer}>
             {/* Address */}
-            {renderCompanyItem(
+            {card.address && renderCompanyItem(
               'location-outline',
-              '東京都中央区日本橋小網町3-11 日本橋SOYIC4階',
-              () => handleMapOpen('東京都中央区日本橋小網町3-11 日本橋SOYIC4階')
+              card.address,
+              () => handleMapOpen(card.address!)
             )}
 
             {/* Postal Code */}
-            {renderCompanyItem(
+            {card.postalCode && renderCompanyItem(
               'location-outline',
-              '103-0016',
-              () => handleMapOpen('103-0016')
+              `〒${card.postalCode}`,
+              () => handleMapOpen(card.postalCode!)
+            )}
+
+            {/* Company */}
+            {card.company && renderCompanyItem(
+              'business-outline',
+              card.company
+            )}
+
+            {/* Department */}
+            {card.department && renderCompanyItem(
+              'folder-outline',
+              card.department
+            )}
+
+            {/* Position */}
+            {card.position && renderCompanyItem(
+              'briefcase-outline',
+              card.position
             )}
           </View>
         </View>
 
         {/* Memo Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="document-text-outline" size={24} color="#FF6B35" />
-            <Text style={styles.sectionTitle}>メモ</Text>
-          </View>
+        {card.memo && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="document-text-outline" size={24} color="#FF6B35" />
+              <Text style={styles.sectionTitle}>メモ</Text>
+            </View>
 
-          <View style={styles.cardContainer}>
-            {renderMemoItem(
-              'document-outline',
-              'lopenmall.JP'
-            )}
+            <View style={styles.cardContainer}>
+              {renderMemoItem(
+                'document-outline',
+                card.memo
+              )}
+            </View>
           </View>
-        </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -365,6 +407,29 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     marginTop: 50,
+  },
+  cardInfoSection: {
+    marginTop: 24,
+  },
+  cardInfoContainer: {
+    marginHorizontal: 16,
+  },
+  cardName: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FF6B35',
+  },
+  cardCompany: {
+    fontSize: 16,
+    color: '#666666',
+  },
+  cardDepartment: {
+    fontSize: 16,
+    color: '#666666',
+  },
+  cardPosition: {
+    fontSize: 16,
+    color: '#666666',
   },
 });
 
