@@ -178,6 +178,7 @@ const KANJI_READING_MAP: { [key: string]: string } = {
   '拓海': 'たくみ',
   '健太': 'けんた',
   '雄大': 'ゆうだい',
+  '龍太': 'りゅうた',
   
   // 常見公司名
   '株式会社': 'かぶしきがいしゃ',
@@ -357,8 +358,8 @@ export class JapaneseSortUtils {
   }
   
   /**
-   * 獲取分組標籤（あいうえお分組）
-   * 支援讀音參數
+   * 獲取分組標籤（精細五十音分組）
+   * 支援讀音參數，按照具體音節分組（あ、い、う、え、お、か、き、く等）
    */
   static getGroupLabel(text: string, reading?: string): string {
     let kana: string;
@@ -386,17 +387,80 @@ export class JapaneseSortUtils {
     
     const firstChar = kana[0];
     
-    // 平假名分組
-    if (firstChar >= 'あ' && firstChar <= 'お') return 'あ';
-    if (firstChar >= 'か' && firstChar <= 'ご') return 'か';
-    if (firstChar >= 'さ' && firstChar <= 'ぞ') return 'さ';
-    if (firstChar >= 'た' && firstChar <= 'ど') return 'た';
-    if (firstChar >= 'な' && firstChar <= 'の') return 'な';
-    if (firstChar >= 'は' && firstChar <= 'ぽ') return 'は';
-    if (firstChar >= 'ま' && firstChar <= 'も') return 'ま';
-    if (firstChar >= 'や' && firstChar <= 'よ') return 'や';
-    if (firstChar >= 'ら' && firstChar <= 'ろ') return 'ら';
-    if (firstChar >= 'わ' && firstChar <= 'ん') return 'わ';
+    // 精細平假名分組 - 每個音節一個分組
+    // あ行
+    if (firstChar === 'あ') return 'あ';
+    if (firstChar === 'い') return 'い';
+    if (firstChar === 'う') return 'う';
+    if (firstChar === 'え') return 'え';
+    if (firstChar === 'お') return 'お';
+    
+    // か行
+    if (firstChar === 'か' || firstChar === 'が') return 'か';
+    if (firstChar === 'き' || firstChar === 'ぎ') return 'き';
+    if (firstChar === 'く' || firstChar === 'ぐ') return 'く';
+    if (firstChar === 'け' || firstChar === 'げ') return 'け';
+    if (firstChar === 'こ' || firstChar === 'ご') return 'こ';
+    
+    // さ行
+    if (firstChar === 'さ' || firstChar === 'ざ') return 'さ';
+    if (firstChar === 'し' || firstChar === 'じ') return 'し';
+    if (firstChar === 'す' || firstChar === 'ず') return 'す';
+    if (firstChar === 'せ' || firstChar === 'ぜ') return 'せ';
+    if (firstChar === 'そ' || firstChar === 'ぞ') return 'そ';
+    
+    // た行
+    if (firstChar === 'た' || firstChar === 'だ') return 'た';
+    if (firstChar === 'ち' || firstChar === 'ぢ') return 'ち';
+    if (firstChar === 'つ' || firstChar === 'づ') return 'つ';
+    if (firstChar === 'て' || firstChar === 'で') return 'て';
+    if (firstChar === 'と' || firstChar === 'ど') return 'と';
+    
+    // な行
+    if (firstChar === 'な') return 'な';
+    if (firstChar === 'に') return 'に';
+    if (firstChar === 'ぬ') return 'ぬ';
+    if (firstChar === 'ね') return 'ね';
+    if (firstChar === 'の') return 'の';
+    
+    // は行
+    if (firstChar === 'は' || firstChar === 'ば' || firstChar === 'ぱ') return 'は';
+    if (firstChar === 'ひ' || firstChar === 'び' || firstChar === 'ぴ') return 'ひ';
+    if (firstChar === 'ふ' || firstChar === 'ぶ' || firstChar === 'ぷ') return 'ふ';
+    if (firstChar === 'へ' || firstChar === 'べ' || firstChar === 'ぺ') return 'へ';
+    if (firstChar === 'ほ' || firstChar === 'ぼ' || firstChar === 'ぽ') return 'ほ';
+    
+    // ま行
+    if (firstChar === 'ま') return 'ま';
+    if (firstChar === 'み') return 'み';
+    if (firstChar === 'む') return 'む';
+    if (firstChar === 'め') return 'め';
+    if (firstChar === 'も') return 'も';
+    
+    // や行
+    if (firstChar === 'や') return 'や';
+    if (firstChar === 'ゆ') return 'ゆ';
+    if (firstChar === 'よ') return 'よ';
+    
+    // ら行
+    if (firstChar === 'ら') return 'ら';
+    if (firstChar === 'り') return 'り';
+    if (firstChar === 'る') return 'る';
+    if (firstChar === 'れ') return 'れ';
+    if (firstChar === 'ろ') return 'ろ';
+    
+    // わ行
+    if (firstChar === 'わ') return 'わ';
+    if (firstChar === 'ゐ') return 'ゐ';
+    if (firstChar === 'ゑ') return 'ゑ';
+    if (firstChar === 'を') return 'を';
+    if (firstChar === 'ん') return 'ん';
+    
+    // 片假名處理（轉換為對應平假名）
+    if (firstChar >= 'ア' && firstChar <= 'ン') {
+      const hiraganaChar = String.fromCharCode(firstChar.charCodeAt(0) - 0x30A1 + 0x3041);
+      return this.getGroupLabel(hiraganaChar);
+    }
     
     // 英文字母
     if (/[a-zA-Z]/.test(firstChar)) {
@@ -455,8 +519,20 @@ export class JapaneseSortUtils {
     
     // 按假名順序排序分組
     const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-      // あいうえお 分組排在前面
-      const kanaGroups = ['あ', 'か', 'さ', 'た', 'な', 'は', 'ま', 'や', 'ら', 'わ'];
+      // 精細五十音分組順序
+      const kanaGroups = [
+        'あ', 'い', 'う', 'え', 'お',
+        'か', 'き', 'く', 'け', 'こ',
+        'さ', 'し', 'す', 'せ', 'そ',
+        'た', 'ち', 'つ', 'て', 'と',
+        'な', 'に', 'ぬ', 'ね', 'の',
+        'は', 'ひ', 'ふ', 'へ', 'ほ',
+        'ま', 'み', 'む', 'め', 'も',
+        'や', 'ゆ', 'よ',
+        'ら', 'り', 'る', 'れ', 'ろ',
+        'わ', 'ゐ', 'ゑ', 'を', 'ん'
+      ];
+      
       const indexA = kanaGroups.indexOf(a);
       const indexB = kanaGroups.indexOf(b);
       
