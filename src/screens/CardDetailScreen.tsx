@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,11 +10,13 @@ import {
   Alert,
   Image,
   Share,
+  Vibration,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { BusinessCard } from '../types';
 import { StorageService } from '../services/StorageService';
+import { JapaneseSortUtils } from '../utils/JapaneseSortUtils';
 
 interface Props {
   navigation?: {
@@ -30,12 +32,50 @@ interface Props {
 
 const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const card = route?.params?.card;
+  const [cardData, setCardData] = useState<BusinessCard | undefined>(card);
 
-  if (!card) {
+  useEffect(() => {
+    if (card) {
+      // 自動生成缺失的讀音
+      const updatedCard = { ...card };
+      let needsUpdate = false;
+
+      // 如果沒有姓名讀音，嘗試自動生成
+      if (!updatedCard.nameReading && updatedCard.name) {
+        const generatedReading = JapaneseSortUtils.getKanjiReading(updatedCard.name);
+        if (generatedReading) {
+          updatedCard.nameReading = generatedReading;
+          needsUpdate = true;
+        }
+      }
+
+      // 如果沒有公司讀音，嘗試自動生成
+      if (!updatedCard.companyReading && updatedCard.company) {
+        const generatedReading = JapaneseSortUtils.getKanjiReading(updatedCard.company);
+        if (generatedReading) {
+          updatedCard.companyReading = generatedReading;
+          needsUpdate = true;
+        }
+      }
+
+      // 如果生成了新的讀音，更新數據和存儲
+      if (needsUpdate) {
+        setCardData(updatedCard);
+        // 異步更新存儲中的數據
+        StorageService.saveBusinessCard(updatedCard).catch((error: any) => {
+          console.error('Failed to update card with generated readings:', error);
+        });
+      } else {
+        setCardData(card);
+      }
+    }
+  }, [card]);
+
+  if (!cardData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>名刺が見つかりません</Text>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <Text style={styles.errorText}>名片信息不存在</Text>
+      </View>
     );
   }
 
@@ -47,9 +87,8 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   const handleEdit = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (navigation) {
-      navigation.navigate('CardEdit', { card });
+    if (navigation && cardData) {
+      navigation.navigate('CardEdit', { card: cardData });
     }
   };
 
@@ -58,53 +97,53 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       
       // 構建分享內容
-      let shareContent = `📇 ${card.name}\n`;
+      let shareContent = `📇 ${cardData.name}\n`;
       
-      if (card.nameReading) {
-        shareContent += `(${card.nameReading})\n`;
+      if (cardData.nameReading) {
+        shareContent += `(${cardData.nameReading})\n`;
       }
       
-      shareContent += `🏢 ${card.company}\n`;
+      shareContent += `🏢 ${cardData.company}\n`;
       
-      if (card.companyReading) {
-        shareContent += `(${card.companyReading})\n`;
+      if (cardData.companyReading) {
+        shareContent += `(${cardData.companyReading})\n`;
       }
       
-      if (card.department) {
-        shareContent += `📋 ${card.department}\n`;
+      if (cardData.department) {
+        shareContent += `📋 ${cardData.department}\n`;
       }
       
-      if (card.position) {
-        shareContent += `💼 ${card.position}\n`;
+      if (cardData.position) {
+        shareContent += `💼 ${cardData.position}\n`;
       }
       
-      if (card.phone) {
-        shareContent += `📞 ${card.phone}\n`;
+      if (cardData.phone) {
+        shareContent += `📞 ${cardData.phone}\n`;
       }
       
-      if (card.mobile) {
-        shareContent += `📱 ${card.mobile}\n`;
+      if (cardData.mobile) {
+        shareContent += `📱 ${cardData.mobile}\n`;
       }
       
-      if (card.email) {
-        shareContent += `📧 ${card.email}\n`;
+      if (cardData.email) {
+        shareContent += `📧 ${cardData.email}\n`;
       }
       
-      if (card.website) {
-        shareContent += `🌐 ${card.website}\n`;
+      if (cardData.website) {
+        shareContent += `🌐 ${cardData.website}\n`;
       }
       
-      if (card.address) {
-        shareContent += `📍 ${card.address}\n`;
+      if (cardData.address) {
+        shareContent += `📍 ${cardData.address}\n`;
       }
       
-      if (card.memo) {
-        shareContent += `📝 ${card.memo}\n`;
+      if (cardData.memo) {
+        shareContent += `📝 ${cardData.memo}\n`;
       }
       
       const result = await Share.share({
         message: shareContent,
-        title: `${card.name}の名刺`,
+        title: `${cardData.name}の名刺`,
       });
       
       if (result.action === Share.sharedAction) {
@@ -121,7 +160,7 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     
     Alert.alert(
       '名刺を削除',
-      `「${card.name}」の名刺を削除しますか？この操作は取り消せません。`,
+      `「${cardData.name}」の名刺を削除しますか？この操作は取り消せません。`,
       [
         {
           text: 'キャンセル',
@@ -132,7 +171,7 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await StorageService.deleteBusinessCard(card.id);
+              await StorageService.deleteBusinessCard(cardData.id);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               
               Alert.alert(
@@ -278,28 +317,32 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Business Card Image */}
-        {card.imageUri && (
+        {cardData.imageUri && (
           <View style={styles.cardImageSection}>
-            <Image source={{ uri: card.imageUri }} style={styles.cardImage} resizeMode="contain" />
+            <Image source={{ uri: cardData.imageUri }} style={styles.cardImage} resizeMode="contain" />
           </View>
         )}
 
         {/* Card Basic Information */}
         <View style={styles.cardInfoSection}>
           <View style={styles.cardInfoContainer}>
-            <Text style={styles.cardName}>{card.name}</Text>
-            {card.nameReading && (
-              <Text style={styles.cardNameReading}>({card.nameReading})</Text>
+            <Text style={styles.cardName}>
+              {cardData.name}
+              {cardData.nameReading && (
+                <Text style={styles.cardNameReadingInline}>（{cardData.nameReading}）</Text>
+              )}
+            </Text>
+            <Text style={styles.cardCompany}>
+              {cardData.company}
+              {cardData.companyReading && (
+                <Text style={styles.cardCompanyReadingInline}>（{cardData.companyReading}）</Text>
+              )}
+            </Text>
+            {cardData.department && (
+              <Text style={styles.cardDepartment}>{cardData.department}</Text>
             )}
-            <Text style={styles.cardCompany}>{card.company}</Text>
-            {card.companyReading && (
-              <Text style={styles.cardCompanyReading}>({card.companyReading})</Text>
-            )}
-            {card.department && (
-              <Text style={styles.cardDepartment}>{card.department}</Text>
-            )}
-            {card.position && (
-              <Text style={styles.cardPosition}>{card.position}</Text>
+            {cardData.position && (
+              <Text style={styles.cardPosition}>{cardData.position}</Text>
             )}
           </View>
         </View>
@@ -313,51 +356,51 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.cardContainer}>
             {/* Mobile Phone */}
-            {card.mobile && renderContactItem(
+            {cardData.mobile && renderContactItem(
               'phone-portrait-outline',
-              card.mobile,
+              cardData.mobile,
               'call',
-              () => handlePhoneCall(card.mobile!)
+              () => handlePhoneCall(cardData.mobile!)
             )}
 
             {/* Office Phone */}
-            {card.phone && renderContactItem(
+            {cardData.phone && renderContactItem(
               'call-outline',
-              card.phone,
+              cardData.phone,
               'call',
-              () => handlePhoneCall(card.phone!)
+              () => handlePhoneCall(cardData.phone!)
             )}
 
             {/* Fax */}
-            {card.fax && renderContactItem(
+            {cardData.fax && renderContactItem(
               'print-outline',
-              card.fax,
+              cardData.fax,
               'call',
-              () => handlePhoneCall(card.fax!)
+              () => handlePhoneCall(cardData.fax!)
             )}
 
             {/* Email */}
-            {card.email && renderContactItem(
+            {cardData.email && renderContactItem(
               'mail-outline',
-              card.email,
+              cardData.email,
               'mail',
-              () => handleEmail(card.email!)
+              () => handleEmail(cardData.email!)
             )}
 
             {/* Sub Email */}
-            {card.subEmail && renderContactItem(
+            {cardData.subEmail && renderContactItem(
               'mail-outline',
-              card.subEmail,
+              cardData.subEmail,
               'mail',
-              () => handleEmail(card.subEmail!)
+              () => handleEmail(cardData.subEmail!)
             )}
 
             {/* Website */}
-            {card.website && renderContactItem(
+            {cardData.website && renderContactItem(
               'globe-outline',
-              card.website,
+              cardData.website,
               'open-outline',
-              () => handleWebsite(card.website!)
+              () => handleWebsite(cardData.website!)
             )}
           </View>
         </View>
@@ -371,41 +414,41 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
           <View style={styles.cardContainer}>
             {/* Address */}
-            {card.address && renderCompanyItem(
+            {cardData.address && renderCompanyItem(
               'location-outline',
-              card.address,
-              () => handleMapOpen(card.address!)
+              cardData.address,
+              () => handleMapOpen(cardData.address!)
             )}
 
             {/* Postal Code */}
-            {card.postalCode && renderCompanyItem(
+            {cardData.postalCode && renderCompanyItem(
               'location-outline',
-              `〒${card.postalCode}`,
-              () => handleMapOpen(card.postalCode!)
+              `〒${cardData.postalCode}`,
+              () => handleMapOpen(cardData.postalCode!)
             )}
 
             {/* Company */}
-            {card.company && renderCompanyItem(
+            {cardData.company && renderCompanyItem(
               'business-outline',
-              card.company
+              cardData.company
             )}
 
             {/* Department */}
-            {card.department && renderCompanyItem(
+            {cardData.department && renderCompanyItem(
               'folder-outline',
-              card.department
+              cardData.department
             )}
 
             {/* Position */}
-            {card.position && renderCompanyItem(
+            {cardData.position && renderCompanyItem(
               'briefcase-outline',
-              card.position
+              cardData.position
             )}
           </View>
         </View>
 
         {/* Memo Section */}
-        {card.memo && (
+        {cardData.memo && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="document-text-outline" size={24} color="#FF6B35" />
@@ -415,7 +458,7 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.cardContainer}>
               {renderMemoItem(
                 'document-outline',
-                card.memo
+                cardData.memo
               )}
             </View>
           </View>
@@ -542,24 +585,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FF6B35',
   },
-  cardNameReading: {
+  cardNameReadingInline: {
     fontSize: 16,
     color: '#FF6B35',
     fontWeight: '400',
     fontStyle: 'italic',
-    marginTop: 2,
-    marginBottom: 8,
   },
   cardCompany: {
     fontSize: 16,
     color: '#666666',
-    marginTop: 4,
+    marginTop: 8,
   },
-  cardCompanyReading: {
+  cardCompanyReadingInline: {
     fontSize: 14,
     color: '#999999',
     fontStyle: 'italic',
-    marginTop: 2,
   },
   cardDepartment: {
     fontSize: 16,
