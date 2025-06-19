@@ -17,7 +17,6 @@ import * as Haptics from 'expo-haptics';
 import { BusinessCard } from '../types';
 import { StorageService } from '../services/StorageService';
 import LoadingOverlay from '../components/LoadingOverlay';
-import SkeletonLoader from '../components/SkeletonLoader';
 
 interface Props {
   navigation?: {
@@ -29,10 +28,6 @@ interface Props {
       card?: BusinessCard;
       imageUri?: string;
       ocrData?: Partial<BusinessCard>;
-      isProcessing?: boolean;
-      fromCamera?: boolean;
-      fromGallery?: boolean;
-      orientation?: 'landscape' | 'portrait';
     };
   };
 }
@@ -66,23 +61,8 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
       } else if (route?.params?.ocrData) {
         // New card from OCR - data already processed
         setCardData(route.params.ocrData);
-      } else if (route?.params?.isProcessing && route?.params?.imageUri) {
-        // New card with processing flag - start background OCR
-        setIsProcessingOCR(true);
-        try {
-          const { GoogleAIOCRService } = await import('../services/GoogleAIOCRService');
-          const ocrData = await GoogleAIOCRService.processBusinessCard(route.params.imageUri);
-          
-          // 漸進式填入OCR結果
-          await fillFormProgressively(ocrData);
-        } catch (error) {
-          console.error('OCR processing failed:', error);
-          // Keep empty data if OCR fails
-        } finally {
-          setIsProcessingOCR(false);
-        }
       } else if (route?.params?.imageUri && !route?.params?.ocrData) {
-        // New card with image but no OCR data - need to process (legacy)
+        // New card with image but no OCR data - need to process
         setIsProcessingOCR(true);
         try {
           const { GoogleAIOCRService } = await import('../services/GoogleAIOCRService');
@@ -99,24 +79,6 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
     initializeCardData();
   }, [route?.params]);
-
-  const fillFormProgressively = async (ocrData: Partial<BusinessCard>) => {
-    const fields = [
-      'name', 'company', 'department', 'position', 
-      'phone', 'mobile', 'email', 'website', 'address'
-    ];
-    
-    for (const field of fields) {
-      if (ocrData[field as keyof BusinessCard]) {
-        await new Promise(resolve => setTimeout(resolve, 100)); // 100ms間隔
-        setCardData(prev => ({ 
-          ...prev, 
-          [field]: ocrData[field as keyof BusinessCard] 
-        }));
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    }
-  };
 
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -192,29 +154,22 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
   ) => {
     const value = cardData[field] as string || '';
     const hasContent = value.length > 0;
-    const isFieldProcessing = isProcessingOCR && !value;
     
     return (
       <View style={styles.inputContainer}>
         <View style={styles.inputRow}>
           <Ionicons name={icon as any} size={24} color="#666666" style={styles.inputIcon} />
-          {isFieldProcessing ? (
-            <View style={styles.skeletonContainer}>
-              <SkeletonLoader width="60%" height={16} borderRadius={4} />
-            </View>
-          ) : (
-            <TextInput
-              style={styles.textInput}
-              placeholder={placeholder}
-              placeholderTextColor="#999999"
-              value={value}
-              onChangeText={(text) => updateField(field, text)}
-              keyboardType={keyboardType}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          )}
-          {hasContent && !isFieldProcessing && (
+          <TextInput
+            style={styles.textInput}
+            placeholder={placeholder}
+            placeholderTextColor="#999999"
+            value={value}
+            onChangeText={(text) => updateField(field, text)}
+            keyboardType={keyboardType}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {hasContent && (
             <TouchableOpacity 
               style={styles.clearButton} 
               onPress={() => clearField(field)}
@@ -500,11 +455,6 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 4,
-  },
-  skeletonContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingLeft: 16,
   },
 });
 

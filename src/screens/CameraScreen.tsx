@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { GoogleAIOCRService } from '../services/GoogleAIOCRService';
 import { ImageProcessingService } from '../services/ImageProcessingService';
-import CameraTransition from '../components/CameraTransition';
+import ScanTransitionOverlay from '../components/ScanTransitionOverlay';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -32,10 +32,12 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
   const [showTransition, setShowTransition] = useState(false);
+  const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
+  const [ocrDataCache, setOcrDataCache] = useState<any>(null);
   const cameraRef = useRef<CameraView>(null);
-  const processedImageRef = useRef<string | null>(null);
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
@@ -80,12 +82,35 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     if (!result.canceled && result.assets[0]) {
       const imageUri = result.assets[0].uri;
       
-      // 直接導航到編輯頁面，OCR處理將在背景進行
-      navigation.navigate('cardEdit', { 
-        imageUri: imageUri,
-        isProcessing: true,
-        fromGallery: true 
-      });
+      // 顯示 OCR 處理狀態
+      setIsProcessingOCR(true);
+      
+      try {
+        // 進行 OCR 分析
+        const ocrData = await GoogleAIOCRService.processBusinessCard(imageUri);
+        
+        if (!isMounted) return;
+        
+        // 導航到編輯頁面並帶入 OCR 結果
+        navigation.navigate('cardEdit', { 
+          imageUri: imageUri,
+          ocrData: ocrData,
+          fromGallery: true 
+        });
+      } catch (error) {
+        console.error('OCR processing failed:', error);
+        if (isMounted) {
+          // 即使 OCR 失敗，仍然導航到編輯頁面
+          navigation.navigate('cardEdit', { 
+            imageUri: imageUri,
+            fromGallery: true 
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setIsProcessingOCR(false);
+        }
+      }
     }
   };
 
@@ -96,65 +121,85 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     setIsCapturing(true);
 
     try {
-      // 只拍一次照片
       const photo = await cameraRef.current.takePictureAsync({
         quality: 1,
         base64: false,
         skipProcessing: false,
       });
 
-      if (!isMounted || !photo) return;
+      if (!isMounted) return;
 
-      // 顯示快門動畫，同時處理圖片
-      setShowTransition(true);
-      
-      // 並行處理圖片裁剪
-      const cropData = ImageProcessingService.getCropArea(orientation);
-      const originalImageUri = photo.uri;
-      
-      try {
-        // 裁剪圖片（只保留名片部分）
-        const croppedImageUri = await ImageProcessingService.cropBusinessCard(
-          originalImageUri, 
-          cropData, 
-          orientation
-        );
+      if (photo) {
+        // 計算裁剪區域
+        const cropData = ImageProcessingService.getCropArea(orientation);
+        const originalImageUri = photo.uri;
         
-        // 儲存處理好的圖片URI供動畫完成後使用
-        processedImageRef.current = croppedImageUri;
-      } catch (cropError) {
-        // 如果裁剪失敗，使用原圖
-        processedImageRef.current = originalImageUri;
+        // 先裁剪圖片
+        try {
+          const croppedImageUri = await ImageProcessingService.cropBusinessCard(
+            originalImageUri, 
+            cropData, 
+            orientation
+          );
+          
+          if (!isMounted) return;
+          
+          // 儲存圖片URI並顯示魔法動畫
+          setCapturedImageUri(croppedImageUri);
+          setShowTransition(true);
+          
+          // 在背景處理OCR
+          processOCRInBackground(croppedImageUri);
+          
+        } catch (cropError) {
+          console.error('Crop failed, using original image:', cropError);
+          setCapturedImageUri(originalImageUri);
+          setShowTransition(true);
+          processOCRInBackground(originalImageUri);
+        }
       }
-      
     } catch (error) {
       console.error('Camera capture error:', error);
       if (isMounted) {
         Alert.alert('エラー', '写真の撮影に失敗しました');
+      }
+    } finally {
+      if (isMounted) {
         setIsCapturing(false);
       }
     }
   };
 
-  const handleTransitionComplete = async () => {
+  const processOCRInBackground = async (imageUri: string) => {
+    try {
+      const ocrData = await GoogleAIOCRService.processBusinessCard(imageUri);
+      if (isMounted) {
+        setOcrDataCache(ocrData);
+      }
+    } catch (error) {
+      console.error('OCR processing failed:', error);
+      if (isMounted) {
+        setOcrDataCache(null);
+      }
+    }
+  };
+
+  const handleTransitionComplete = () => {
     setShowTransition(false);
     
     if (!isMounted) return;
-
-    // 使用已處理好的圖片
-    const processedImageUri = processedImageRef.current;
     
-    if (processedImageUri) {
-      // 立即導航到編輯頁面，OCR處理將在背景進行
-      navigation.navigate('cardEdit', { 
-        imageUri: processedImageUri,
-        isProcessing: true,  // 告訴編輯頁面需要進行OCR
-        fromCamera: true,
-        orientation: orientation,
-      });
-    }
+    // 導航到編輯頁面
+    navigation.navigate('cardEdit', { 
+      imageUri: capturedImageUri,
+      ocrData: ocrDataCache,
+      fromCamera: true,
+      orientation: orientation,
+    });
     
-    setIsCapturing(false);
+    // 清理狀態
+    setCapturedImageUri(null);
+    setOcrDataCache(null);
   };
 
 
@@ -314,11 +359,12 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           </SafeAreaView>
         </View>
       </View>
-      
-      {/* Camera Transition Effect */}
-      <CameraTransition 
-        visible={showTransition} 
-        onComplete={handleTransitionComplete} 
+
+      {/* 魔法過場動畫 */}
+      <ScanTransitionOverlay
+        visible={showTransition}
+        onComplete={handleTransitionComplete}
+        capturedImageUri={capturedImageUri || undefined}
       />
     </View>
   );
