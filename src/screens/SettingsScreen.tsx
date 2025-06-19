@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { StorageService } from '../services/StorageService';
+import { ExportService } from '../services/ExportService';
 
 interface Props {
   navigation: {
@@ -51,13 +52,38 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
-      'データエクスポート',
-      'Pro版でご利用いただけます',
-      [{ text: 'OK' }]
-    );
+    
+    try {
+      // 取得所有名片資料
+      const businessCards = await StorageService.getAllBusinessCards();
+      
+      if (businessCards.length === 0) {
+        Alert.alert(
+          '匯出CSV',
+          '目前沒有名片資料可以匯出',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // 匯出CSV並分享
+      await ExportService.saveAndShareCSV(businessCards);
+      
+      Alert.alert(
+        '匯出成功',
+        `已成功匯出 ${businessCards.length} 張名片的資料`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Export failed:', error);
+      Alert.alert(
+        '匯出失敗',
+        '匯出CSV時發生錯誤，請重試',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const handleRate = () => {
@@ -206,7 +232,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>Ver. 1.0.04 Made in Keelung ❤️</Text>
+          <Text style={styles.versionText}>Ver. 1.0.00 Made by NeoBase</Text>
         </View>
       </ScrollView>
 
@@ -258,7 +284,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   header: {
-    height: 100,
+    height: 60,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
