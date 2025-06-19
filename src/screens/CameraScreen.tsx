@@ -35,6 +35,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [isMounted, setIsMounted] = useState(true);
   const [showTransition, setShowTransition] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const processedImageRef = useRef<string | null>(null);
 
   useEffect(() => {
     StatusBar.setBarStyle('light-content');
@@ -95,18 +96,37 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     setIsCapturing(true);
 
     try {
+      // 只拍一次照片
       const photo = await cameraRef.current.takePictureAsync({
         quality: 1,
         base64: false,
         skipProcessing: false,
       });
 
-      if (!isMounted) return;
+      if (!isMounted || !photo) return;
 
-      if (photo) {
-        // 顯示快門動畫
-        setShowTransition(true);
+      // 顯示快門動畫，同時處理圖片
+      setShowTransition(true);
+      
+      // 並行處理圖片裁剪
+      const cropData = ImageProcessingService.getCropArea(orientation);
+      const originalImageUri = photo.uri;
+      
+      try {
+        // 裁剪圖片（只保留名片部分）
+        const croppedImageUri = await ImageProcessingService.cropBusinessCard(
+          originalImageUri, 
+          cropData, 
+          orientation
+        );
+        
+        // 儲存處理好的圖片URI供動畫完成後使用
+        processedImageRef.current = croppedImageUri;
+      } catch (cropError) {
+        // 如果裁剪失敗，使用原圖
+        processedImageRef.current = originalImageUri;
       }
+      
     } catch (error) {
       console.error('Camera capture error:', error);
       if (isMounted) {
@@ -121,56 +141,20 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     
     if (!isMounted) return;
 
-    try {
-      // 重新拍照取得最新照片
-      const photo = await cameraRef.current?.takePictureAsync({
-        quality: 1,
-        base64: false,
-        skipProcessing: false,
+    // 使用已處理好的圖片
+    const processedImageUri = processedImageRef.current;
+    
+    if (processedImageUri) {
+      // 立即導航到編輯頁面，OCR處理將在背景進行
+      navigation.navigate('cardEdit', { 
+        imageUri: processedImageUri,
+        isProcessing: true,  // 告訴編輯頁面需要進行OCR
+        fromCamera: true,
+        orientation: orientation,
       });
-
-      if (!isMounted || !photo) return;
-
-      // 計算裁剪區域
-      const cropData = ImageProcessingService.getCropArea(orientation);
-      const originalImageUri = photo.uri;
-      
-      try {
-        // 裁剪圖片（只保留名片部分）
-        const croppedImageUri = await ImageProcessingService.cropBusinessCard(
-          originalImageUri, 
-          cropData, 
-          orientation
-        );
-        
-        if (!isMounted) return;
-        
-        // 立即導航到編輯頁面，OCR處理將在背景進行
-        navigation.navigate('cardEdit', { 
-          imageUri: croppedImageUri,
-          isProcessing: true,  // 告訴編輯頁面需要進行OCR
-          fromCamera: true,
-          orientation: orientation,
-        });
-      } catch (cropError) {
-        // 如果裁剪失敗，使用原圖
-        navigation.navigate('cardEdit', { 
-          imageUri: originalImageUri,
-          isProcessing: true,
-          fromCamera: true,
-          orientation: orientation,
-        });
-      }
-    } catch (error) {
-      console.error('Transition capture error:', error);
-      if (isMounted) {
-        Alert.alert('エラー', '写真の撮影に失敗しました');
-      }
-    } finally {
-      if (isMounted) {
-        setIsCapturing(false);
-      }
     }
+    
+    setIsCapturing(false);
   };
 
 

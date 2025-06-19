@@ -3,7 +3,10 @@ import {
   View,
   StyleSheet,
   Animated,
+  Dimensions,
 } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
 
 interface CameraTransitionProps {
   visible: boolean;
@@ -11,48 +14,103 @@ interface CameraTransitionProps {
 }
 
 const CameraTransition: React.FC<CameraTransitionProps> = ({ visible, onComplete }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const shutterAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (visible) {
-      // 快門效果動畫
-      Animated.sequence([
-        // 快速變白 (模擬快門閃光)
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        // 快速消失
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 100,
-          useNativeDriver: true,
-        }),
+      // 專業相機快門效果
+      Animated.parallel([
+        // 快門閃光效果
+        Animated.sequence([
+          Animated.timing(shutterAnim, {
+            toValue: 1,
+            duration: 80,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shutterAnim, {
+            toValue: 0,
+            duration: 120,
+            useNativeDriver: true,
+          }),
+        ]),
+        // 輕微縮放效果模擬快門機械動作
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 0.98,
+            duration: 80,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 120,
+            useNativeDriver: true,
+          }),
+        ]),
       ]).start(() => {
-        onComplete();
+        // 延遲一點時間讓用戶感受到快門效果
+        setTimeout(() => {
+          onComplete();
+        }, 100);
       });
     }
-  }, [visible, fadeAnim, onComplete]);
+  }, [visible, shutterAnim, scaleAnim, onComplete]);
 
   if (!visible) {
     return null;
   }
 
   return (
-    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} />
+    <View style={styles.container}>
+      {/* 快門縮放效果 */}
+      <Animated.View 
+        style={[
+          styles.scaleOverlay, 
+          { 
+            transform: [{ scale: scaleAnim }] 
+          }
+        ]} 
+      />
+      {/* 快門閃光效果 */}
+      <Animated.View 
+        style={[
+          styles.flashOverlay, 
+          { 
+            opacity: shutterAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 0.8],
+            })
+          }
+        ]} 
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  scaleOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+  },
+  flashOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     backgroundColor: '#FFFFFF',
-    zIndex: 1000,
   },
 });
 

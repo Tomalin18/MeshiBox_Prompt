@@ -72,18 +72,18 @@ processingText: {
 
 ## 修改後的實現
 
-### 新的流程設計
-1. **拍照瞬間**：觸覺反饋 + 快門音效
-2. **立即導航**：拍照後立即跳轉到編輯頁面
-3. **背景處理**：在編輯頁面顯示處理中的優雅動畫
-4. **漸進填入**：OCR結果逐步填入表單欄位
-5. **完成提示**：處理完成後的subtle提示
+### 修正後的流程設計
+1. **單次拍照**：用戶按下拍照，立即拍攝並保存照片
+2. **專業快門動畫**：類似專業相機的快門效果（閃光+輕微縮放）
+3. **並行處理**：在快門動畫進行時同時處理圖片裁剪
+4. **流暢導航**：動畫完成後立即跳轉到編輯頁面
+5. **背景OCR**：在編輯頁面進行OCR處理和漸進填入
 
-### 新的動畫設計
-- **快門效果**：拍照瞬間的白色flash動畫
-- **過場動畫**：從相機到編輯頁面的滑動過渡
-- **載入動畫**：編輯頁面的skeleton loading效果
-- **填入動畫**：OCR結果的漸進式填入動畫
+### 優化後的動畫設計
+- **專業快門效果**：80ms閃光 + 120ms淡出 + 輕微縮放效果
+- **無縫過渡**：無需等待，直接從相機進入編輯頁面
+- **Skeleton Loading**：編輯頁面的專業載入動畫
+- **漸進填入**：OCR結果每100ms填入一個欄位
 
 ## 技術實現方案
 
@@ -98,23 +98,29 @@ const TransitionOverlay: React.FC<{
 };
 ```
 
-### 2. 修改CameraScreen
+### 2. 修正CameraScreen拍照邏輯
 ```typescript
 const handleCapture = async () => {
-  // 1. 拍照
+  // 1. 單次拍照並保存
   const photo = await cameraRef.current.takePictureAsync();
   
-  // 2. 顯示快門效果
+  // 2. 顯示專業快門動畫
   setShowTransition(true);
   
-  // 3. 立即導航 (不等待OCR)
+  // 3. 並行處理圖片裁剪
+  const croppedImageUri = await ImageProcessingService.cropBusinessCard(photo.uri);
+  processedImageRef.current = croppedImageUri;
+  
+  // 4. 動畫完成後導航（避免重複拍照問題）
+};
+
+const handleTransitionComplete = () => {
+  // 使用已處理好的圖片立即導航
   navigation.navigate('cardEdit', { 
-    imageUri: photo.uri,
+    imageUri: processedImageRef.current,
     isProcessing: true,
     fromCamera: true 
   });
-  
-  // 4. 背景處理OCR (在編輯頁面進行)
 };
 ```
 
