@@ -201,11 +201,11 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Pro Features Section */}
         <View style={styles.section}>
-          {renderSectionTitle('settings.section.pro_features')}
+          {renderSectionTitle('Export')}
           
           {renderCard(
             'document-text',
-            'settings.pro_features.export_to_...',
+            'Export to CSV',
             undefined,
             handleExport
           )}
@@ -232,7 +232,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.versionText}>Ver. 1.0.00 Made by NeoBase</Text>
+          <Text style={styles.versionText}>Ver. 1.0.0 Made by NeoBase</Text>
         </View>
       </ScrollView>
 

@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { GoogleAIOCRService } from '../services/GoogleAIOCRService';
 import { ImageProcessingService } from '../services/ImageProcessingService';
+import CameraTransition from '../components/CameraTransition';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -31,8 +32,8 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
   const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
   const [isCapturing, setIsCapturing] = useState(false);
-  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [isMounted, setIsMounted] = useState(true);
+  const [showTransition, setShowTransition] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
@@ -78,35 +79,12 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     if (!result.canceled && result.assets[0]) {
       const imageUri = result.assets[0].uri;
       
-      // 顯示 OCR 處理狀態
-      setIsProcessingOCR(true);
-      
-      try {
-        // 進行 OCR 分析
-        const ocrData = await GoogleAIOCRService.processBusinessCard(imageUri);
-        
-        if (!isMounted) return;
-        
-        // 導航到編輯頁面並帶入 OCR 結果
-        navigation.navigate('cardEdit', { 
-          imageUri: imageUri,
-          ocrData: ocrData,
-          fromGallery: true 
-        });
-      } catch (error) {
-        console.error('OCR processing failed:', error);
-        if (isMounted) {
-          // 即使 OCR 失敗，仍然導航到編輯頁面
-          navigation.navigate('cardEdit', { 
-            imageUri: imageUri,
-            fromGallery: true 
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsProcessingOCR(false);
-        }
-      }
+      // 直接導航到編輯頁面，OCR處理將在背景進行
+      navigation.navigate('cardEdit', { 
+        imageUri: imageUri,
+        isProcessing: true,
+        fromGallery: true 
+      });
     }
   };
 
@@ -126,67 +104,65 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
       if (!isMounted) return;
 
       if (photo) {
-        // 計算裁剪區域
-        const cropData = ImageProcessingService.getCropArea(orientation);
-        const originalImageUri = photo.uri;
-        
-        // 顯示 OCR 處理狀態
-        setIsProcessingOCR(true);
-        
-        try {
-          // 1. 先裁剪圖片（只保留名片部分）
-          const croppedImageUri = await ImageProcessingService.cropBusinessCard(
-            originalImageUri, 
-            cropData, 
-            orientation
-          );
-          
-          if (!isMounted) return;
-          
-          // 2. 進行 OCR 分析（使用裁剪後的圖片）
-          const ocrData = await GoogleAIOCRService.processBusinessCard(croppedImageUri);
-          
-          if (!isMounted) return;
-          
-          // 3. 導航到編輯頁面並帶入 OCR 結果（使用裁剪後的圖片）
-          navigation.navigate('cardEdit', { 
-            imageUri: croppedImageUri,
-            ocrData: ocrData,
-            fromCamera: true,
-            orientation: orientation,
-          });
-        } catch (error) {
-          console.error('OCR processing failed:', error);
-          if (isMounted) {
-            // 即使 OCR 失敗，仍然導航到編輯頁面（使用裁剪後的圖片）
-            try {
-              const croppedImageUri = await ImageProcessingService.cropBusinessCard(
-                originalImageUri, 
-                cropData, 
-                orientation
-              );
-              navigation.navigate('cardEdit', { 
-                imageUri: croppedImageUri,
-                fromCamera: true,
-                orientation: orientation,
-              });
-            } catch (cropError) {
-              // 如果裁剪也失敗，使用原圖
-              navigation.navigate('cardEdit', { 
-                imageUri: originalImageUri,
-                fromCamera: true,
-                orientation: orientation,
-              });
-            }
-          }
-        } finally {
-          if (isMounted) {
-            setIsProcessingOCR(false);
-          }
-        }
+        // 顯示快門動畫
+        setShowTransition(true);
       }
     } catch (error) {
       console.error('Camera capture error:', error);
+      if (isMounted) {
+        Alert.alert('エラー', '写真の撮影に失敗しました');
+        setIsCapturing(false);
+      }
+    }
+  };
+
+  const handleTransitionComplete = async () => {
+    setShowTransition(false);
+    
+    if (!isMounted) return;
+
+    try {
+      // 重新拍照取得最新照片
+      const photo = await cameraRef.current?.takePictureAsync({
+        quality: 1,
+        base64: false,
+        skipProcessing: false,
+      });
+
+      if (!isMounted || !photo) return;
+
+      // 計算裁剪區域
+      const cropData = ImageProcessingService.getCropArea(orientation);
+      const originalImageUri = photo.uri;
+      
+      try {
+        // 裁剪圖片（只保留名片部分）
+        const croppedImageUri = await ImageProcessingService.cropBusinessCard(
+          originalImageUri, 
+          cropData, 
+          orientation
+        );
+        
+        if (!isMounted) return;
+        
+        // 立即導航到編輯頁面，OCR處理將在背景進行
+        navigation.navigate('cardEdit', { 
+          imageUri: croppedImageUri,
+          isProcessing: true,  // 告訴編輯頁面需要進行OCR
+          fromCamera: true,
+          orientation: orientation,
+        });
+      } catch (cropError) {
+        // 如果裁剪失敗，使用原圖
+        navigation.navigate('cardEdit', { 
+          imageUri: originalImageUri,
+          isProcessing: true,
+          fromCamera: true,
+          orientation: orientation,
+        });
+      }
+    } catch (error) {
+      console.error('Transition capture error:', error);
       if (isMounted) {
         Alert.alert('エラー', '写真の撮影に失敗しました');
       }
@@ -259,14 +235,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           {/* Guide Content in Black Area */}
           <View style={styles.guideContent}>
             {/* Instruction Text */}
-            {isProcessingOCR ? (
-              <View style={styles.processingContainer}>
-                <Text style={styles.processingText}>名片分析中...</Text>
-                <Text style={styles.processingSubText}>請稍候，正在識別名片信息</Text>
-              </View>
-            ) : (
-              <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
-            )}
+            <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
             
             {/* Orientation Toggle */}
             <View style={styles.orientationToggle}>
@@ -361,6 +330,12 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           </SafeAreaView>
         </View>
       </View>
+      
+      {/* Camera Transition Effect */}
+      <CameraTransition 
+        visible={showTransition} 
+        onComplete={handleTransitionComplete} 
+      />
     </View>
   );
 };
