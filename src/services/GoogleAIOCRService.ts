@@ -36,12 +36,14 @@ export class GoogleAIOCRService {
   // 將圖片轉換為 base64
   static async imageToBase64(imageUri: string): Promise<string> {
     try {
+      console.log('🖼️ 轉換圖片為 base64:', imageUri);
       const base64 = await FileSystem.readAsStringAsync(imageUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
+      console.log('✅ Base64 轉換完成，長度:', base64.length);
       return base64;
     } catch (error) {
-      console.error('Failed to convert image to base64:', error);
+      console.error('❌ Failed to convert image to base64:', error);
       throw new Error('圖片轉換失敗');
     }
   }
@@ -102,6 +104,9 @@ export class GoogleAIOCRService {
       };
 
       // 發送 API 請求
+      console.log('🌐 發送 API 請求到:', `${this.API_URL}?key=${this.API_KEY.substring(0, 10)}...`);
+      console.log('📤 請求體大小:', JSON.stringify(requestBody).length, 'bytes');
+      
       const response = await fetch(`${this.API_URL}?key=${this.API_KEY}`, {
         method: 'POST',
         headers: {
@@ -110,19 +115,24 @@ export class GoogleAIOCRService {
         body: JSON.stringify(requestBody),
       });
 
+      console.log('📥 API 響應狀態:', response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Google AI API Error:', errorText);
-        throw new Error(`API 請求失敗: ${response.status}`);
+        console.error('❌ Google AI API Error:', errorText);
+        throw new Error(`API 請求失敗: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('📋 API 原始響應:', JSON.stringify(result, null, 2));
       
       if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
+        console.error('❌ API 返回格式錯誤:', result);
         throw new Error('API 返回格式錯誤');
       }
 
       const textContent = result.candidates[0].content.parts[0].text;
+      console.log('📝 提取的文本內容:', textContent);
       
       // 清理和解析 JSON 結果
       try {
@@ -224,12 +234,12 @@ export class GoogleAIOCRService {
   // 主要 OCR 處理方法
   static async processBusinessCard(imageUri: string): Promise<Partial<BusinessCard>> {
     try {
-      console.log('開始處理名片 OCR...');
+      console.log('📸 開始處理名片 OCR...', imageUri);
       
       // 使用 Google AI Studio API 進行 OCR
       const ocrResult = await this.extractTextFromImage(imageUri);
       
-      console.log('OCR 結果:', ocrResult);
+      console.log('🔍 OCR 原始結果:', ocrResult);
 
       // 轉換為 BusinessCard 格式
       const businessCard: Partial<BusinessCard> = {
@@ -250,6 +260,7 @@ export class GoogleAIOCRService {
         imageUri: imageUri,
       };
 
+      console.log('📋 轉換後的名片數據:', businessCard);
       return businessCard;
     } catch (error) {
       console.error('OCR processing failed:', error);

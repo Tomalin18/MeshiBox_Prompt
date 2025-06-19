@@ -36,7 +36,9 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
   const [isMounted, setIsMounted] = useState(true);
   const [showTransition, setShowTransition] = useState(false);
   const [capturedImageUri, setCapturedImageUri] = useState<string | null>(null);
-  const [ocrDataCache, setOcrDataCache] = useState<any>(null);
+  const [ocrData, setOcrData] = useState<any>(null);
+  const [isAnimationComplete, setIsAnimationComplete] = useState(false);
+  const [isOcrComplete, setIsOcrComplete] = useState(false);
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
@@ -53,6 +55,26 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
       }
     };
   }, []);
+
+  // 監聽動畫和OCR完成狀態，當兩者都完成時導航
+  useEffect(() => {
+    if (isAnimationComplete && isOcrComplete && capturedImageUri && ocrData && isMounted) {
+      console.log('🎯 useEffect觸發：動畫和OCR都完成，立即導航');
+      navigation.navigate('cardEdit', { 
+        imageUri: capturedImageUri,
+        ocrData: ocrData,
+        fromCamera: true,
+        orientation: orientation,
+      });
+      
+      // 清理狀態
+      setShowTransition(false);
+      setCapturedImageUri(null);
+      setOcrData(null);
+      setIsAnimationComplete(false);
+      setIsOcrComplete(false);
+    }
+  }, [isAnimationComplete, isOcrComplete, capturedImageUri, ocrData, isMounted, navigation, orientation]);
 
   const handleClose = () => {
     if (!isMounted) return;
@@ -82,8 +104,8 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     if (!result.canceled && result.assets[0]) {
       const imageUri = result.assets[0].uri;
       
-      // 顯示 OCR 處理狀態
-      setIsProcessingOCR(true);
+      // 顯示 OCR 處理狀態 - 從相簿選擇不需要動畫
+      console.log('📁 從相簿選擇，直接處理OCR');
       
       try {
         // 進行 OCR 分析
@@ -107,9 +129,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           });
         }
       } finally {
-        if (isMounted) {
-          setIsProcessingOCR(false);
-        }
+        console.log('📁 相簿選擇OCR處理完成');
       }
     }
   };
@@ -144,18 +164,24 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           
           if (!isMounted) return;
           
-          // 儲存圖片URI並顯示魔法動畫
+          // 儲存圖片URI並顯示動畫
           setCapturedImageUri(croppedImageUri);
           setShowTransition(true);
+          setIsAnimationComplete(false);
+          setIsOcrComplete(false);
           
-          // 在背景處理OCR
-          processOCRInBackground(croppedImageUri);
+          // 立即開始OCR處理（與動畫並行）
+          processOCRInParallel(croppedImageUri);
           
         } catch (cropError) {
           console.error('Crop failed, using original image:', cropError);
           setCapturedImageUri(originalImageUri);
           setShowTransition(true);
-          processOCRInBackground(originalImageUri);
+          setIsAnimationComplete(false);
+          setIsOcrComplete(false);
+          
+          // 立即開始OCR處理（與動畫並行）
+          processOCRInParallel(originalImageUri);
         }
       }
     } catch (error) {
@@ -170,36 +196,60 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const processOCRInBackground = async (imageUri: string) => {
+  // 並行處理OCR，不立即導航
+  const processOCRInParallel = async (imageUri: string) => {
     try {
-      const ocrData = await GoogleAIOCRService.processBusinessCard(imageUri);
+      console.log('🔍 開始並行 OCR 處理:', imageUri);
+      
+      const ocrResult = await GoogleAIOCRService.processBusinessCard(imageUri);
+      console.log('✅ OCR 處理完成:', ocrResult);
+      
       if (isMounted) {
-        setOcrDataCache(ocrData);
+        setOcrData(ocrResult);
+        setIsOcrComplete(true);
+        // 檢查是否可以導航
+        checkAndNavigate(imageUri, ocrResult);
       }
     } catch (error) {
-      console.error('OCR processing failed:', error);
+      console.error('❌ OCR processing failed:', error);
+      
       if (isMounted) {
-        setOcrDataCache(null);
+        // OCR 失敗時使用空數據
+        const emptyData = {
+          name: '',
+          nameReading: '',
+          company: '',
+          companyReading: '',
+          department: '',
+          position: '',
+          phone: '',
+          mobile: '',
+          fax: '',
+          email: '',
+          website: '',
+          address: '',
+          postalCode: '',
+          memo: '',
+          imageUri: imageUri,
+        };
+        setOcrData(emptyData);
+        setIsOcrComplete(true);
+        checkAndNavigate(imageUri, emptyData);
       }
     }
   };
 
+  // OCR完成後的檢查（useEffect會處理實際導航）
+  const checkAndNavigate = (imageUri: string, ocrResult: any) => {
+    console.log('🔍 OCR完成，檢查動畫狀態 - isAnimationComplete:', isAnimationComplete);
+    // useEffect會自動處理導航，這裡只需要確保狀態正確
+  };
+
   const handleTransitionComplete = () => {
-    setShowTransition(false);
-    
-    if (!isMounted) return;
-    
-    // 導航到編輯頁面
-    navigation.navigate('cardEdit', { 
-      imageUri: capturedImageUri,
-      ocrData: ocrDataCache,
-      fromCamera: true,
-      orientation: orientation,
-    });
-    
-    // 清理狀態
-    setCapturedImageUri(null);
-    setOcrDataCache(null);
+    console.log('🎬 動畫完成');
+    setIsAnimationComplete(true);
+    console.log('🔍 動畫完成，檢查OCR狀態 - isOcrComplete:', isOcrComplete);
+    // useEffect會自動處理導航，這裡只需要設置狀態
   };
 
 

@@ -206,10 +206,6 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.cardName}>{card.name}</Text>
         <Text style={styles.cardCompany}>{card.company}</Text>
       </View>
-      
-      <TouchableOpacity style={styles.openButton} activeOpacity={0.8}>
-        <Text style={styles.openButtonText}>開く</Text>
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 

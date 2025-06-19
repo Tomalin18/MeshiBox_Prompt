@@ -35,11 +35,14 @@ const ScanTransitionOverlay: React.FC<ScanTransitionOverlayProps> = ({
   // 狀態
   const [currentStep, setCurrentStep] = useState(0);
   const steps = [
-    '正在分析名片...',
+    '正在分析圖像...',
     '識別文字信息...',
-    '智能提取數據...',
-    '準備編輯界面...'
+    '處理數據中...',
+    '準備完成...'
   ];
+  
+  // 用於存儲動畫引用以便停止
+  const animationRefs = useRef<Animated.CompositeAnimation[]>([]);
 
   useEffect(() => {
     if (visible) {
@@ -106,7 +109,7 @@ const ScanTransitionOverlay: React.FC<ScanTransitionOverlayProps> = ({
         // 進度條動畫
         Animated.timing(progressAnim, {
           toValue: 1,
-          duration: 2500,
+          duration: 3000,
           useNativeDriver: false,
         }),
       ]),
@@ -120,21 +123,24 @@ const ScanTransitionOverlay: React.FC<ScanTransitionOverlayProps> = ({
         } else {
           clearInterval(stepInterval);
           // 動畫完成，延遲一點再關閉
+          console.log('🎬 動畫步驟完成，準備淡出');
           setTimeout(() => {
             fadeOutAndComplete();
-          }, 500);
+          }, 700);
           return prev;
         }
       });
-    }, 600);
+    }, 750);
   };
 
   const fadeOutAndComplete = () => {
+    console.log('🎬 開始淡出動畫');
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 400,
       useNativeDriver: true,
     }).start(() => {
+      console.log('🎬 動畫完全結束，調用 onComplete');
       onComplete();
     });
   };
@@ -218,7 +224,7 @@ const ScanTransitionOverlay: React.FC<ScanTransitionOverlayProps> = ({
 
             {/* 文字和進度 */}
             <View style={styles.textContainer}>
-              <Text style={styles.magicText}>✨ AI 魔法識別中 ✨</Text>
+              <Text style={styles.mainText}>AI 智能識別</Text>
               <Text style={styles.stepText}>{steps[currentStep]}</Text>
               
               {/* 進度條 */}
@@ -292,7 +298,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
-  magicText: {
+  mainText: {
     fontSize: 24,
     fontWeight: '700',
     color: '#FFFFFF',

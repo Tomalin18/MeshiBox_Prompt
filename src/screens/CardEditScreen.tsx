@@ -34,7 +34,6 @@ interface Props {
 
 const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [cardData, setCardData] = useState<Partial<BusinessCard>>({
     name: '',
     company: '',
@@ -55,25 +54,21 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
   useEffect(() => {
     const initializeCardData = async () => {
+      console.log('🏁 CardEditScreen 初始化');
+      console.log('📦 Route params:', route?.params);
+      
       if (route?.params?.card) {
         // Editing existing card
+        console.log('✏️ 編輯現有名片');
         setCardData(route.params.card);
       } else if (route?.params?.ocrData) {
         // New card from OCR - data already processed
+        console.log('🆕 來自OCR的新名片數據:', route.params.ocrData);
         setCardData(route.params.ocrData);
       } else if (route?.params?.imageUri && !route?.params?.ocrData) {
-        // New card with image but no OCR data - need to process
-        setIsProcessingOCR(true);
-        try {
-          const { GoogleAIOCRService } = await import('../services/GoogleAIOCRService');
-          const ocrData = await GoogleAIOCRService.processBusinessCard(route.params.imageUri);
-          setCardData(ocrData);
-        } catch (error) {
-          console.error('OCR processing failed:', error);
-          // Keep empty data if OCR fails
-        } finally {
-          setIsProcessingOCR(false);
-        }
+        // New card with image but no OCR data (fallback case)
+        // OCR should have been completed during transition animation
+        console.log('⚠️ OCR data not available, using empty card data');
       }
     };
 
@@ -209,12 +204,6 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
           {imageUri && (
             <View style={styles.imageContainer}>
               <Image source={{ uri: imageUri }} style={styles.cardImage} resizeMode="contain" />
-              {isProcessingOCR && (
-                <View style={styles.ocrOverlay}>
-                  <Text style={styles.ocrText}>正在分析名片...</Text>
-                  <Text style={styles.ocrSubText}>請稍候，AI 正在識別文字信息</Text>
-                </View>
-              )}
             </View>
           )}
 
@@ -223,26 +212,19 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.sectionHeader}>
               <Ionicons name="person-outline" size={24} color="#FF6B35" />
               <Text style={styles.sectionTitle}>基本情報</Text>
-              <TouchableOpacity style={styles.addButton}>
-                <Ionicons name="add" size={24} color="#FF6B35" />
-              </TouchableOpacity>
             </View>
 
             {/* Language Selector */}
             <View style={styles.languageSelector}>
               <Text style={styles.languageTab}>日本語</Text>
-              <TouchableOpacity style={styles.languageAddButton}>
-                <Ionicons name="add" size={24} color="#FF6B35" />
-              </TouchableOpacity>
             </View>
 
             {/* Form Fields */}
             <View style={styles.formFields}>
-              {renderInputField('person-outline', '姓名 (例: 鴨山かほり)', 'name')}
-              {renderInputField('text-outline', '姓名讀音 (統一使用羅馬字，例: Go Masatoshi)', 'nameReading')}
+              {renderInputField('person-outline', '姓名 ', 'name')}
+              {renderInputField('text-outline', '姓名讀音', 'nameReading')}
               {renderInputField('briefcase-outline', '役職', 'position')}
               {renderInputField('business-outline', '會社名', 'company')}
-              {renderInputField('text-outline', '會社名讀音 (統一使用羅馬字)', 'companyReading')}
               {renderInputField('folder-outline', '部門', 'department')}
             </View>
           </View>
@@ -252,18 +234,15 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.sectionHeader}>
               <Ionicons name="call-outline" size={24} color="#FF6B35" />
               <Text style={styles.sectionTitle}>連絡先情報</Text>
-              <TouchableOpacity style={styles.addButton}>
-                <Ionicons name="add" size={24} color="#FF6B35" />
-              </TouchableOpacity>
             </View>
 
             <View style={styles.formFields}>
-              {renderInputField('phone-portrait-outline', '070-1319-4481', 'mobile', 'phone-pad')}
-              {renderInputField('call-outline', '03-6264-9166', 'phone', 'phone-pad')}
-              {renderInputField('print-outline', '03-6264-9195', 'fax', 'phone-pad')}
-              {renderInputField('mail-outline', 'k_shigiyama88@ptm-tokyo.co.jp', 'email', 'email-address')}
+              {renderInputField('phone-portrait-outline', '携帯電話', 'mobile', 'phone-pad')}
+              {renderInputField('call-outline', '電話番号', 'phone', 'phone-pad')}
+              {renderInputField('print-outline', 'FAX番号', 'fax', 'phone-pad')}
+              {renderInputField('mail-outline', 'メールアドレス', 'email', 'email-address')}
               {renderInputField('mail-outline', 'サブメール', 'email', 'email-address')}
-              {renderInputField('link-outline', 'http://ptm-tokyo.co.jp', 'website', 'url')}
+              {renderInputField('link-outline', 'ウェブサイト', 'website', 'url')}
             </View>
           </View>
 
@@ -272,15 +251,12 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.sectionHeader}>
               <Ionicons name="business-outline" size={24} color="#FF6B35" />
               <Text style={styles.sectionTitle}>会社情報</Text>
-              <TouchableOpacity style={styles.addButton}>
-                <Ionicons name="add" size={24} color="#FF6B35" />
-              </TouchableOpacity>
             </View>
 
             <View style={styles.formFields}>
-              {renderInputField('location-outline', '103-0016', 'postalCode')}
-              {renderInputField('location-outline', '東京都中央区日本橋小網町 3-11 日本橋...', 'address')}
-              {renderInputField('grid-outline', '会社ID', 'memo')}
+              {renderInputField('location-outline', '郵便番号', 'postalCode')}
+              {renderInputField('location-outline', '住所', 'address')}
+              {renderInputField('grid-outline', 'メモ', 'memo')}
             </View>
           </View>
 
@@ -289,13 +265,10 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.sectionHeader}>
               <Ionicons name="logo-instagram" size={24} color="#FF6B35" />
               <Text style={styles.sectionTitle}>ソーシャルメディア</Text>
-              <TouchableOpacity style={styles.addButton}>
-                <Ionicons name="add" size={24} color="#FF6B35" />
-              </TouchableOpacity>
             </View>
 
             <View style={styles.formFields}>
-              {renderInputField('chatbubble-outline', 'LINE アカウント', 'memo')}
+              {renderInputField('chatbubble-outline', 'SNSアカウント', 'memo')}
             </View>
           </View>
         </ScrollView>
@@ -368,31 +341,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
   },
-  ocrOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-  },
-  ocrText: {
-    color: '#FF6B35',
-    fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  ocrSubText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '400',
-    textAlign: 'center',
-    opacity: 0.9,
-  },
+
   section: {
     marginTop: 24,
   },
@@ -409,14 +358,9 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
-  addButton: {
-    padding: 4,
-    marginRight: 20,
-  },
   languageSelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginHorizontal: 16,
     marginBottom: 8,
   },
@@ -427,9 +371,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#FF6B35',
     paddingBottom: 4,
-  },
-  languageAddButton: {
-    padding: 4,
   },
   formFields: {
     marginHorizontal: 16,
