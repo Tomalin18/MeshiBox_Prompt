@@ -17,12 +17,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.meishibox.app",
+      "bundleIdentifier": "com.neobase.meishibox",
       "infoPlist": {
         "NSCameraUsageDescription": "名刺をスキャンするためにカメラを使用します",
         "NSPhotoLibraryUsageDescription": "名刺の画像を選択するためにフォトライブラリにアクセスします",
         "NSContactsUsageDescription": "名刺の情報を連絡先に追加するために使用します",
-        "NSMicrophoneUsageDescription": "このアプリはマイクを使用しません"
+        "NSMicrophoneUsageDescription": "このアプリはマイクを使用しません",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -30,14 +31,15 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FF6B35"
       },
-      "package": "com.meishibox.app",
+      "package": "com.neobase.meishibox",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_CONTACTS",
         "android.permission.WRITE_CONTACTS",
-        "android.permission.VIBRATE"
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -53,7 +55,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "名刺の画像を選択するためにフォトライブラリにアクセスします"
+          "photosPermission": "名刺の画像を選択するためにフォトライブラリにAクセスします"
         }
       ],
       [
@@ -65,7 +67,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "7b4b8e71-6abe-42ca-9487-3cf9e757b27a"
       }
     }
   }
