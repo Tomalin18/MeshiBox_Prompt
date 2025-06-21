@@ -2,7 +2,7 @@
   "expo": {
     "name": "MeishiBox",
     "slug": "meishibox",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,9 +16,9 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.neobase.meishibox",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "infoPlist": {
         "NSCameraUsageDescription": "名刺をスキャンするためにカメラを使用します",
         "NSPhotoLibraryUsageDescription": "名刺の画像を選択するためにフォトライブラリにアクセスします",
@@ -33,7 +33,7 @@
         "backgroundColor": "#FF6B35"
       },
       "package": "com.neobase.meishibox",
-      "versionCode": 5,
+      "versionCode": 6,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

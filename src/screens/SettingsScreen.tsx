@@ -177,7 +177,8 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Membership Section */}
+        {/* Membership Section - 隱藏訂閱功能 */}
+        {/* 暫時隱藏訂閱相關功能
         <View style={styles.section}>
           {renderSectionTitle('メンバーシップ')}
           
@@ -198,6 +199,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             handleRestorePurchases
           )}
         </View>
+        */}
 
         {/* Pro Features Section */}
         <View style={styles.section}>

@@ -31,9 +31,9 @@ const LoadingScreen: React.FC<Props> = ({ navigation }) => {
       useNativeDriver: true,
     }).start();
 
-    // 2.5秒後導航到訂閱頁面
+    // 2.5秒後導航到名片列表頁面（隱藏訂閱功能）
     const timer = setTimeout(() => {
-      navigation.navigate('Subscription');
+      navigation.navigate('CardList');
     }, 2500);
 
     return () => {

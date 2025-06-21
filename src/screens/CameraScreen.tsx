@@ -276,7 +276,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
         <StatusBar barStyle="light-content" backgroundColor="#000000" />
         <Text style={styles.permissionText}>カメラの許可が必要です</Text>
         <TouchableOpacity style={styles.settingsButton} onPress={requestPermission}>
-          <Text style={styles.settingsButtonText}>許可する</Text>
+          <Text style={styles.settingsButtonText}>繼續</Text>
         </TouchableOpacity>
       </View>
     );
