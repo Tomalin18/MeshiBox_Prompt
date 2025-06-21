@@ -56,7 +56,7 @@ export class StorageService {
       );
     } catch (error) {
       console.error('Failed to save business card:', error);
-      throw new Error('名片保存失敗');
+      throw new Error('名片儲存失敗');
     }
   }
 
@@ -133,7 +133,7 @@ export class StorageService {
       );
     } catch (error) {
       console.error('Failed to save user subscription:', error);
-      throw new Error('訂閱狀態保存失敗');
+      throw new Error('訂閱狀態儲存失敗');
     }
   }
 
@@ -202,7 +202,7 @@ export class StorageService {
       );
     } catch (error) {
       console.error('Failed to save app settings:', error);
-      throw new Error('設定保存失敗');
+      throw new Error('設定儲存失敗');
     }
   }
 
@@ -226,7 +226,7 @@ export class StorageService {
       return JSON.stringify(exportData, null, 2);
     } catch (error) {
       console.error('Failed to export data:', error);
-      throw new Error('數據導出失敗');
+      throw new Error('資料匯出失敗');
     }
   }
 
@@ -270,7 +270,7 @@ export class StorageService {
       }
     } catch (error) {
       console.error('Failed to import data:', error);
-      throw new Error('數據導入失敗');
+      throw new Error('資料匯入失敗');
     }
   }
 
@@ -285,7 +285,7 @@ export class StorageService {
       ]);
     } catch (error) {
       console.error('Failed to clear all data:', error);
-      throw new Error('數據清除失敗');
+      throw new Error('資料清除失敗');
     }
   }
 

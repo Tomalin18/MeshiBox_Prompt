@@ -35,9 +35,9 @@ const ScanTransitionOverlay: React.FC<ScanTransitionOverlayProps> = ({
   // 狀態
   const [currentStep, setCurrentStep] = useState(0);
   const steps = [
-    '正在分析圖像...',
-    '識別文字信息...',
-    '處理數據中...',
+    '正在分析影像...',
+    '識別文字資訊...',
+    '處理資料中...',
     '準備完成...'
   ];
   
@@ -224,7 +224,7 @@ const ScanTransitionOverlay: React.FC<ScanTransitionOverlayProps> = ({
 
             {/* 文字和進度 */}
             <View style={styles.textContainer}>
-              <Text style={styles.mainText}>AI 智能識別</Text>
+              <Text style={styles.mainText}>AI 智慧識別</Text>
               <Text style={styles.stepText}>{steps[currentStep]}</Text>
               
               {/* 進度條 */}

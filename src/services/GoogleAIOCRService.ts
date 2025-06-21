@@ -128,7 +128,7 @@ export class GoogleAIOCRService {
       
       if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
         console.error('❌ API 返回格式錯誤:', result);
-        throw new Error('API 返回格式錯誤');
+        throw new Error('API 回傳格式錯誤');
       }
 
       const textContent = result.candidates[0].content.parts[0].text;
@@ -155,7 +155,7 @@ export class GoogleAIOCRService {
           const ocrResult = JSON.parse(jsonString);
           return ocrResult as GoogleAIOCRResult;
         } else {
-          throw new Error('No valid JSON found in response');
+          throw new Error('回應中找不到有效的JSON');
         }
       } catch (parseError) {
         console.error('Failed to parse OCR result:', parseError);

@@ -145,15 +145,15 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
       
       const result = await Share.share({
         message: shareContent,
-        title: `${cardData.name}の名刺`,
+        title: `${cardData.name}的名片`,
       });
       
       if (result.action === Share.sharedAction) {
-        console.log('名刺が共有されました');
+        console.log('名片已分享');
       }
     } catch (error) {
-      console.error('共有エラー:', error);
-      Alert.alert('エラー', '名刺の共有に失敗しました');
+      console.error('共享錯誤:', error);
+      Alert.alert('錯誤', '名片分享失敗');
     }
   };
 
@@ -161,15 +161,15 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     Alert.alert(
-      '名刺を削除',
-      `「${cardData.name}」の名刺を削除しますか？この操作は取り消せません。`,
+      '刪除名片',
+      `確定要刪除「${cardData.name}」的名片嗎？此操作無法復原。`,
       [
         {
-          text: 'キャンセル',
+          text: '取消',
           style: 'cancel',
         },
         {
-          text: '削除',
+          text: '刪除',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -177,8 +177,8 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               
               Alert.alert(
-                '削除完了',
-                '名刺が削除されました',
+                '名片已刪除',
+                '名片已成功刪除',
                 [
                   {
                     text: 'OK',
@@ -191,9 +191,9 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 ]
               );
             } catch (error) {
-              console.error('削除エラー:', error);
+              console.error('刪除錯誤:', error);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('エラー', '名刺の削除に失敗しました');
+              Alert.alert('錯誤', '名片刪除失敗');
             }
           },
         },
@@ -204,12 +204,12 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const handleMore = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
-      'その他のオプション',
-      '操作を選択してください',
+      '其他選項',
+      '請選擇操作',
       [
-        { text: '共有', onPress: handleShare },
-        { text: '削除', style: 'destructive', onPress: handleDelete },
-        { text: 'キャンセル', style: 'cancel' },
+        { text: '共享', onPress: handleShare },
+        { text: '刪除', style: 'destructive', onPress: handleDelete },
+        { text: '取消', style: 'cancel' },
       ]
     );
   };
@@ -303,7 +303,7 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
               <Ionicons name="arrow-back" size={24} color="#FF6B35" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>名刺の詳細</Text>
+            <Text style={styles.headerTitle}>名片詳細資料</Text>
             <View style={styles.headerActions}>
               <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
                 <Ionicons name="create-outline" size={24} color="#FF6B35" />
@@ -353,7 +353,7 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="call" size={24} color="#FF6B35" />
-            <Text style={styles.sectionTitle}>連絡先情報</Text>
+            <Text style={styles.sectionTitle}>連絡先資料</Text>
           </View>
 
           <View style={styles.cardContainer}>
@@ -411,7 +411,7 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="business-outline" size={24} color="#FF6B35" />
-            <Text style={styles.sectionTitle}>会社情報</Text>
+            <Text style={styles.sectionTitle}>公司資料</Text>
           </View>
 
           <View style={styles.cardContainer}>
@@ -454,7 +454,7 @@ const CardDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="document-text-outline" size={24} color="#FF6B35" />
-              <Text style={styles.sectionTitle}>メモ</Text>
+              <Text style={styles.sectionTitle}>備註</Text>
             </View>
 
             <View style={styles.cardContainer}>

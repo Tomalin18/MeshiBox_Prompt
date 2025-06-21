@@ -54,7 +54,7 @@ export class ExportService {
       return bom + csvContent;
     } catch (error) {
       console.error('Failed to export to CSV:', error);
-      throw new Error('CSV 導出失敗');
+      throw new Error('CSV 匯出失敗');
     }
   }
 
@@ -111,7 +111,7 @@ export class ExportService {
       }
     } catch (error) {
       console.error('Failed to save and share CSV:', error);
-      throw new Error('CSV 文件保存或分享失敗');
+      throw new Error('CSV 檔案儲存或分享失敗');
     }
   }
 
@@ -160,7 +160,7 @@ export class ExportService {
       return { success, failed, errors };
     } catch (error) {
       console.error('Failed to export to contacts:', error);
-      throw new Error('聯絡人導出失敗');
+      throw new Error('聯絡人匯出失敗');
     }
   }
 
@@ -171,7 +171,7 @@ export class ExportService {
       return vCards.join('\n\n');
     } catch (error) {
       console.error('Failed to export to vCard:', error);
-      throw new Error('vCard 導出失敗');
+      throw new Error('vCard 匯出失敗');
     }
   }
 
@@ -198,7 +198,7 @@ export class ExportService {
       }
     } catch (error) {
       console.error('Failed to save and share vCard:', error);
-      throw new Error('vCard 文件保存或分享失敗');
+      throw new Error('vCard 檔案儲存或分享失敗');
     }
   }
 
@@ -246,7 +246,7 @@ export class ExportService {
       }
     } catch (error) {
       console.error('Failed to export single card:', error);
-      throw new Error('名片導出失敗');
+      throw new Error('名片匯出失敗');
     }
   }
 

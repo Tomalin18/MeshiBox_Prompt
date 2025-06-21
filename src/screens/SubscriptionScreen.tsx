@@ -125,25 +125,25 @@ const SubscriptionScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Title Section */}
         <View style={styles.titleSection}>
-          <Text style={styles.mainTitle}>MeishiBox Pro無料トライアル</Text>
+          <Text style={styles.mainTitle}>MeishiBox Pro 免費試用</Text>
           <Text style={styles.subtitle}>
-            最も熱心なユーザーのための、最も高度な機能です。
+            為最專業用戶提供的最先進功能。
           </Text>
         </View>
 
         {/* Features List */}
         <View style={styles.featuresContainer}>
-          {renderFeatureItem('月間最大1,000件のスキャン')}
-          {renderFeatureItem('アプリ内の広告を削除')}
-          {renderFeatureItem('連絡先にエクスポート可能')}
-          {renderFeatureItem('Excelにエクスポート')}
+          {renderFeatureItem('每月最多1,000次掃描')}
+          {renderFeatureItem('移除應用程式內廣告')}
+          {renderFeatureItem('可匯出至聯絡人')}
+          {renderFeatureItem('匯出至Excel')}
         </View>
 
         {/* Future Features */}
         <View style={styles.futureSection}>
-          <Text style={styles.futureSectionTitle}>今後の機能</Text>
+          <Text style={styles.futureSectionTitle}>未來功能</Text>
           <View style={styles.futureContainer}>
-            {renderFeatureItem('一括名刺認識', true)}
+            {renderFeatureItem('批量名片識別', true)}
           </View>
         </View>
 
@@ -152,17 +152,17 @@ const SubscriptionScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.pricingRow}>
             {renderPricingCard(
               'yearly',
-              '年間',
-              '¥667円/月',
-              '無料トライアル後、¥8,000/年で請求されます。',
+              '年度方案',
+              '¥667/月',
+              '免費試用後，每年收費¥8,000。',
               selectedPlan === 'yearly',
-              '17%割引'
+              '17%折扣'
             )}
             {renderPricingCard(
               'monthly',
-              '月額',
+              '月度方案',
               '¥800/月',
-              '¥800/月で請求されます',
+              '每月收費¥800',
               selectedPlan === 'monthly'
             )}
           </View>
@@ -174,19 +174,19 @@ const SubscriptionScreen: React.FC<Props> = ({ navigation }) => {
           onPress={handleStartTrial}
           activeOpacity={0.8}
         >
-          <Text style={styles.startButtonText}>無料で始める</Text>
+          <Text style={styles.startButtonText}>免費開始</Text>
         </TouchableOpacity>
 
         {/* Footer Links */}
         <View style={styles.footerLinks}>
           <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.footerLink}>購入履歴を復元</Text>
+            <Text style={styles.footerLink}>恢復購買記錄</Text>
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.footerLink}>利用規約</Text>
+            <Text style={styles.footerLink}>使用條款</Text>
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.footerLink}>プライバシー</Text>
+            <Text style={styles.footerLink}>隱私政策</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

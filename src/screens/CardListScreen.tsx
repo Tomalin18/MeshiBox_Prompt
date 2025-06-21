@@ -146,7 +146,7 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
         onPress={() => setShowSortMenu(false)}
       >
         <View style={styles.sortMenu}>
-          <Text style={styles.sortMenuTitle}>名刺の並び順</Text>
+          <Text style={styles.sortMenuTitle}>名片排序方式</Text>
           
           <TouchableOpacity
             style={[styles.sortOption, sortBy === 'name' && styles.sortOptionSelected]}
@@ -163,7 +163,7 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
             onPress={() => handleSortSelect('company')}
           >
             <Text style={[styles.sortOptionText, sortBy === 'company' && styles.sortOptionTextSelected]}>
-              会社名順
+              會社名順
             </Text>
             {sortBy === 'company' && <Ionicons name="checkmark" size={20} color="#FF6B35" />}
           </TouchableOpacity>
@@ -230,9 +230,9 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="card-outline" size={64} color="#CCCCCC" />
-      <Text style={styles.emptyTitle}>名刺がありません</Text>
+      <Text style={styles.emptyTitle}>尚無名片</Text>
       <Text style={styles.emptySubtitle}>
-        カメラで名刺をスキャンして開始しましょう
+        使用相機掃描名片開始使用吧
       </Text>
     </View>
   );
@@ -255,7 +255,7 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
       {/* Header */}
       <SafeAreaView style={styles.headerSafeArea}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>名刺一覽</Text>
+          <Text style={styles.headerTitle}>名片一覽</Text>
           <TouchableOpacity 
             style={styles.menuButton} 
             activeOpacity={0.7}
@@ -276,7 +276,7 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
           <Ionicons name="search" size={20} color="#999999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
-            placeholder="連絡先を検索..."
+            placeholder="搜尋聯絡人..."
             placeholderTextColor="#999999"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -304,12 +304,12 @@ const CardListScreen: React.FC<Props> = ({ navigation }) => {
       {/* Bottom Navbar */}
       <View style={styles.bottomTabs}>
         <View style={styles.tabContainer}>
-          {/* 名刺一覽 Tab - Selected */}
+          {/* 名片一覽 Tab - Selected */}
           <TouchableOpacity style={styles.tab} activeOpacity={0.7}>
             <View style={styles.tabIconContainer}>
               <Ionicons name="albums" size={24} color="#FF6B35" />
             </View>
-            <Text style={[styles.tabText, styles.tabTextSelected]}>名刺一覽</Text>
+            <Text style={[styles.tabText, styles.tabTextSelected]}>名片一覽</Text>
           </TouchableOpacity>
           
           {/* Camera Tab - Center */}

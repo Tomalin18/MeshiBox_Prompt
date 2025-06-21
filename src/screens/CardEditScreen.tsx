@@ -84,7 +84,7 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleSave = async () => {
     if (!cardData.name?.trim()) {
-      Alert.alert('エラー', '名前を入力してください');
+      Alert.alert('錯誤', '請輸入姓名');
       return;
     }
 
@@ -94,7 +94,7 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
       const businessCard: BusinessCard = {
         id: route?.params?.card?.id || Date.now().toString(),
-        name: cardData.name.trim(),
+        name: cardData.name?.trim() || '',
         nameReading: cardData.nameReading?.trim() || '',
         company: cardData.company?.trim() || '',
         companyReading: cardData.companyReading?.trim() || '',
@@ -116,17 +116,17 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
 
       await StorageService.saveBusinessCard(businessCard);
       if (isEditing) {
-        Alert.alert('成功', '名刺が更新されました');
+        Alert.alert('成功', '名片已更新');
       } else {
-        Alert.alert('成功', '名刺が保存されました');
+        Alert.alert('成功', '名片已儲存');
       }
 
       if (navigation) {
         navigation.goBack();
       }
     } catch (error) {
-      console.error('Failed to save card:', error);
-      Alert.alert('エラー', '名刺の保存に失敗しました');
+      console.error('Save failed:', error);
+      Alert.alert('錯誤', '名片儲存失敗');
     } finally {
       setIsLoading(false);
     }
@@ -187,9 +187,9 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
             <TouchableOpacity style={styles.backButton} onPress={handleBack}>
               <Ionicons name="arrow-back" size={24} color="#FF6B35" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>名刺を編集</Text>
+            <Text style={styles.headerTitle}>編輯名片</Text>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.saveButtonText}>保存</Text>
+              <Text style={styles.saveButtonText}>儲存</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -211,20 +211,20 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="person-outline" size={24} color="#FF6B35" />
-              <Text style={styles.sectionTitle}>基本情報</Text>
+              <Text style={styles.sectionTitle}>基本資料</Text>
             </View>
 
             {/* Language Selector */}
             <View style={styles.languageSelector}>
-              <Text style={styles.languageTab}>日本語</Text>
+              <Text style={styles.languageTab}>繁體中文</Text>
             </View>
 
             {/* Form Fields */}
             <View style={styles.formFields}>
-              {renderInputField('person-outline', '姓名 ', 'name')}
+              {renderInputField('person-outline', '姓名', 'name')}
               {renderInputField('text-outline', '姓名讀音', 'nameReading')}
-              {renderInputField('briefcase-outline', '役職', 'position')}
-              {renderInputField('business-outline', '會社名', 'company')}
+              {renderInputField('briefcase-outline', '職位', 'position')}
+              {renderInputField('business-outline', '公司名稱', 'company')}
               {renderInputField('folder-outline', '部門', 'department')}
             </View>
           </View>
@@ -233,16 +233,16 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="call-outline" size={24} color="#FF6B35" />
-              <Text style={styles.sectionTitle}>連絡先情報</Text>
+              <Text style={styles.sectionTitle}>聯絡資訊</Text>
             </View>
 
             <View style={styles.formFields}>
-              {renderInputField('phone-portrait-outline', '携帯電話', 'mobile', 'phone-pad')}
-              {renderInputField('call-outline', '電話番号', 'phone', 'phone-pad')}
-              {renderInputField('print-outline', 'FAX番号', 'fax', 'phone-pad')}
-              {renderInputField('mail-outline', 'メールアドレス', 'email', 'email-address')}
-              {renderInputField('mail-outline', 'サブメール', 'email', 'email-address')}
-              {renderInputField('link-outline', 'ウェブサイト', 'website', 'url')}
+              {renderInputField('phone-portrait-outline', '攜帶電話', 'mobile', 'phone-pad')}
+              {renderInputField('call-outline', '電話號碼', 'phone', 'phone-pad')}
+              {renderInputField('print-outline', 'FAX號碼', 'fax', 'phone-pad')}
+              {renderInputField('mail-outline', '電子郵件地址', 'email', 'email-address')}
+              {renderInputField('mail-outline', '次電子郵件', 'email', 'email-address')}
+              {renderInputField('link-outline', '網站', 'website', 'url')}
             </View>
           </View>
 
@@ -250,13 +250,13 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="business-outline" size={24} color="#FF6B35" />
-              <Text style={styles.sectionTitle}>会社情報</Text>
+              <Text style={styles.sectionTitle}>公司資訊</Text>
             </View>
 
             <View style={styles.formFields}>
-              {renderInputField('location-outline', '郵便番号', 'postalCode')}
-              {renderInputField('location-outline', '住所', 'address')}
-              {renderInputField('grid-outline', 'メモ', 'memo')}
+              {renderInputField('location-outline', '郵遞區號', 'postalCode')}
+              {renderInputField('location-outline', '地址', 'address')}
+              {renderInputField('grid-outline', '備註', 'memo')}
             </View>
           </View>
 
@@ -264,11 +264,11 @@ const CardEditScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="logo-instagram" size={24} color="#FF6B35" />
-              <Text style={styles.sectionTitle}>ソーシャルメディア</Text>
+              <Text style={styles.sectionTitle}>社交媒體</Text>
             </View>
 
             <View style={styles.formFields}>
-              {renderInputField('chatbubble-outline', 'SNSアカウント', 'memo')}
+              {renderInputField('chatbubble-outline', 'SNS帳號', 'memo')}
             </View>
           </View>
         </ScrollView>

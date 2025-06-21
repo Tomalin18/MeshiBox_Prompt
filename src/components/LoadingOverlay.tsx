@@ -16,7 +16,7 @@ interface LoadingOverlayProps {
 
 const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   visible,
-  message = '処理中...',
+  message = '處理中...',
   progress,
 }) => {
   return (

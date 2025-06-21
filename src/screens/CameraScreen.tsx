@@ -88,7 +88,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('権限が必要です', 'ギャラリーにアクセスするには権限が必要です');
+      Alert.alert('需要相機權限', '需要相機權限才能存取相簿');
       return;
     }
 
@@ -187,7 +187,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       console.error('Camera capture error:', error);
       if (isMounted) {
-        Alert.alert('エラー', '写真の撮影に失敗しました');
+        Alert.alert('發生錯誤', '照片拍攝失敗');
       }
     } finally {
       if (isMounted) {
@@ -274,7 +274,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <View style={styles.container}>
         <StatusBar barStyle="light-content" backgroundColor="#000000" />
-        <Text style={styles.permissionText}>カメラの許可が必要です</Text>
+        <Text style={styles.permissionText}>需要相機權限</Text>
         <TouchableOpacity style={styles.settingsButton} onPress={requestPermission}>
           <Text style={styles.settingsButtonText}>繼續</Text>
         </TouchableOpacity>
@@ -314,7 +314,7 @@ const CameraScreen: React.FC<Props> = ({ navigation }) => {
           {/* Guide Content in Black Area */}
           <View style={styles.guideContent}>
             {/* Instruction Text */}
-            <Text style={styles.instructionText}>枠内に名刺を置いてください</Text>
+            <Text style={styles.instructionText}>請將名片放置於框內</Text>
             
             {/* Orientation Toggle */}
             <View style={styles.orientationToggle}>

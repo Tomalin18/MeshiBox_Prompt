@@ -46,8 +46,8 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const handleRestorePurchases = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
-      '購入の復元',
-      '購入履歴を確認しています...',
+      '恢復購買',
+      '正在檢查購買記錄...',
       [{ text: 'OK' }]
     );
   };
@@ -86,17 +86,17 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const handleRate = () => {
+  const handleRateApp = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
-      'アプリを評価',
-      'App Storeで評価していただけますか？',
+      '評價應用程式',
+      '請到 App Store 為我們評分',
       [
-        { text: 'キャンセル', style: 'cancel' },
-        { text: '評価する', onPress: () => {
-          // App Store URL would go here
+        { text: '取消', style: 'cancel' },
+        { text: '前往評價', onPress: () => {
+          // 在實際應用中，這裡會打開 App Store
           console.log('Opening App Store for rating');
-        }}
+        }},
       ]
     );
   };
@@ -104,8 +104,8 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const handleContact = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
-      'お問い合わせ',
-      'サポートチームにご連絡いたします',
+      '聯絡我們',
+      '將為您聯繫客服團隊',
       [{ text: 'OK' }]
     );
   };
@@ -180,12 +180,12 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
         {/* Membership Section - 隱藏訂閱功能 */}
         {/* 暫時隱藏訂閱相關功能
         <View style={styles.section}>
-          {renderSectionTitle('メンバーシップ')}
+          {renderSectionTitle('會員')}
           
           {renderCard(
             'diamond',
-            'メンバーシップの状態 無料版',
-            `残りスキャン回数: ${remainingScans}`,
+            '會員狀態 免費版',
+            `剩餘掃描次數: ${remainingScans}`,
             () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate('subscription');
@@ -194,7 +194,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
           
           {renderCard(
             'refresh',
-            '購入を復元',
+            '恢復購買',
             undefined,
             handleRestorePurchases
           )}
@@ -203,7 +203,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Pro Features Section */}
         <View style={styles.section}>
-          {renderSectionTitle('Export')}
+          {renderSectionTitle('匯出')}
           
           {renderCard(
             'document-text',
@@ -215,18 +215,18 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Support Section */}
         <View style={styles.section}>
-          {renderSectionTitle('サポート')}
+          {renderSectionTitle('客服支援')}
           
           {renderCard(
-            'thumbs-up',
-            '評価する',
+            'star-outline',
+            '評價應用程式',
             undefined,
-            handleRate
+            handleRateApp
           )}
           
           {renderCard(
-            'chatbubble',
-            'お問い合わせ',
+            'mail-outline',
+            '聯絡我們',
             undefined,
             handleContact
           )}
@@ -250,7 +250,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.tabIconContainer}>
               <Ionicons name="albums" size={24} color="#999999" />
             </View>
-            <Text style={styles.tabText}>名刺一覽</Text>
+            <Text style={styles.tabText}>名片一覽</Text>
           </TouchableOpacity>
           
           {/* Camera Tab - Center */}
